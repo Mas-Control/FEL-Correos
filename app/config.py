@@ -2,6 +2,14 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Standard sync database URL
+DATABASE_URL = os.getenv(
+    "DATABASE_URL"
+)
 
 
 class Settings(BaseSettings):
@@ -36,15 +44,16 @@ class Settings(BaseSettings):
 
 
 @lru_cache()
-def get_settings() -> Settings:
-    return Settings()
+def get_settings():
+    # return Settings()
+    pass
 
 
 # Crear directorios necesarios si no existen
 def create_required_directories():
     settings = get_settings()
-    os.makedirs(settings.XML_STORAGE_PATH, exist_ok=True)
-    os.makedirs(settings.PROCESSED_DATA_PATH, exist_ok=True)
+    # os.makedirs(settings.XML_STORAGE_PATH, exist_ok=True)
+    # os.makedirs(settings.PROCESSED_DATA_PATH, exist_ok=True)
 
 
 # Llamar a la función cuando se importa el módulo

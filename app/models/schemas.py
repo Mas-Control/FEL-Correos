@@ -1,65 +1,220 @@
-from pydantic import BaseModel, Field
-from typing import List, Dict, Optional, Any
-from datetime import datetime
-from decimal import Decimal
+from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import Optional, List
+from app.database import Base
 
 
-class Emisor(BaseModel):
-    nit: str
-    nombre: str
-    nombre_comercial: Optional[str] = None
-    codigo_establecimiento: Optional[str] = None
-    direccion: Optional[str] = None
+class Issuer(Base):
+    """
+    Represents the 'Issuer' entity in the system.
+    The Issuer is responsible for issuing invoices and includes details such
+    as NIT, name, and commercial information.
+    """
+
+    __tablename__ = "issuers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    nit: Mapped[str] = mapped_column(String, unique=True, index=True)
+    name: Mapped[str] = mapped_column(String)
+    commercial_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    establishment_code: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # pylint: disable=not-callable
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
+
+    # One-to-many relationship: one issuer can have many invoices
+    invoices: Mapped[List["Invoice"]] = relationship("Invoice", back_populates="issuer")
+
+    # One-to-one relationship: one issuer has one authentication
+    auth: Mapped["Auth"] = relationship("Auth", back_populates="issuer")
 
 
-class Receptor(BaseModel):
-    nit: str
-    nombre: str
-    direccion: Optional[str] = None
+class Recipient(Base):
+    """
+    Represents the 'Recipient' entity in the system.
+    The Recipient is the entity receiving the invoice, including details such
+    as NIT, name, and address.
+    """
+
+    __tablename__ = "recipients"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    nit: Mapped[str] = mapped_column(String, unique=True, index=True)
+    name: Mapped[str] = mapped_column(String)
+    address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # pylint: disable=not-callable
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
+
+    # One-to-many relationship: one recipient can have many invoices
+    invoices: Mapped[List["Invoice"]] = relationship(
+        "Invoice", back_populates="recipient"
+    )
 
 
-class Item(BaseModel):
-    numero_linea: int
-    bien_servicio: str
-    cantidad: Decimal
-    unidad_medida: str
-    descripcion: str
-    precio_unitario: Decimal
-    precio: Decimal
-    descuento: Decimal
-    total: Decimal
-    impuestos: Dict[str, Any]
+class Item(Base):
+    """
+    Represents the 'Item' entity within an invoice.
+    An item is a line entry in an invoice, detailing the quantity, description,
+    price, and associated taxes.
+    """
+
+    __tablename__ = "items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    line_number: Mapped[int] = mapped_column(Integer)
+    good_or_service: Mapped[str] = mapped_column(String)
+    quantity: Mapped[Float] = mapped_column(Float)
+    unit_of_measure: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String)
+    unit_price: Mapped[Float] = mapped_column(Float)
+    price: Mapped[Float] = mapped_column(Float)
+    discount: Mapped[Float] = mapped_column(Float)
+    total: Mapped[Float] = mapped_column(Float)
+    taxes: Mapped[Optional[str]] = mapped_column(
+        Text
+    )  # Store JSON or serialized data as Text
+
+    # pylint: disable=not-callable
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
+
+    # Foreign Key to Invoice
+    invoice_id: Mapped[int] = mapped_column(Integer, ForeignKey("invoices.id"))
+
+    invoice: Mapped["Invoice"] = relationship("Invoice", back_populates="items")
 
 
-class Factura(BaseModel):
-    numero_autorizacion: str
-    serie: str
-    numero: str
-    fecha_emision: datetime
-    tipo_documento: str
-    emisor: Emisor
-    receptor: Receptor
-    items: List[Item]
-    total: Decimal
-    iva: Decimal
-    moneda: str = "GTQ"
-    xml_path: str
-    certificador_nombre: Optional[str] = None
-    certificador_nit: Optional[str] = None
-    fecha_procesamiento: datetime = Field(default_factory=datetime.now)
+class Invoice(Base):
+    """
+    Represents the 'Invoice' entity in the system.
+    An invoice includes details like the authorization number, issue date,
+    total, tax (IVA), associated issuer, and recipient.
+    """
+
+    __tablename__ = "invoices"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    authorization_number: Mapped[str] = mapped_column(String)
+    series: Mapped[str] = mapped_column(String)
+    number: Mapped[str] = mapped_column(String)
+    document_type: Mapped[str] = mapped_column(String)
+    issuer_id: Mapped[int] = mapped_column(Integer, ForeignKey("issuers.id"))
+    recipient_id: Mapped[int] = mapped_column(Integer, ForeignKey("recipients.id"))
+    total: Mapped[Float] = mapped_column(Float)
+    vat: Mapped[Float] = mapped_column(Float)
+    currency: Mapped[str] = mapped_column(String, default="GTQ")
+    xml_path: Mapped[str] = mapped_column(String)
+    certifier_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    certifier_nit: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # pylint: disable=not-callable
+    emission_date: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+    processing_date: Mapped[DateTime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
+
+    issuer: Mapped["Issuer"] = relationship("Issuer", back_populates="invoices")
+    recipient: Mapped["Recipient"] = relationship(
+        "Recipient", back_populates="invoices"
+    )
+    items: Mapped[List["Item"]] = relationship("Item", back_populates="invoice")
 
 
-class FacturaResumen(BaseModel):
-    numero_autorizacion: str
-    fecha_emision: datetime
-    emisor_nombre: str
-    emisor_nit: str
-    total: Decimal
+class InvoiceSummary(Base):
+    """
+    Represents a summarized version of an invoice.
+    The Invoice Summary includes key details like the authorization number,
+    emission date, issuer details, and total amount.
+    """
+
+    __tablename__ = "invoice_summaries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    authorization_number: Mapped[str] = mapped_column(String)
+    emission_date: Mapped[DateTime] = mapped_column(DateTime)
+    issuer_name: Mapped[str] = mapped_column(String)
+    issuer_nit: Mapped[str] = mapped_column(String)
+    total: Mapped[Float] = mapped_column(Float)
+
+    # pylint: disable=not-callable
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
 
 
-class ClienteResumen(BaseModel):
-    nit: str
-    nombre: str
-    total_facturas: int
-    suma_total: Decimal
-    facturas: List[FacturaResumen]
+class ClientSummary(Base):
+    """
+    Represents a summary of a client's invoices.
+    The Client Summary includes information about the client and an aggregated
+    total of invoices issued to them.
+    """
+
+    __tablename__ = "client_summaries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    nit: Mapped[str] = mapped_column(String)
+    name: Mapped[str] = mapped_column(String)
+    total_invoices: Mapped[int] = mapped_column(Integer)
+    total_sum: Mapped[Float] = mapped_column(Float)
+
+    # pylint: disable=not-callable
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
+
+    # One-to-many relationship: a client has many invoice summaries
+    invoices: Mapped[List["InvoiceSummary"]] = relationship(
+        "InvoiceSummary", backref="client_summary"
+    )
+
+
+class Auth(Base):
+    """
+    Represents the 'Auth' entity in the system.
+    The Auth entity includes authentication details for an issuer.
+    """
+
+    __tablename__ = "auth"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    issuer_id: Mapped[int] = mapped_column(Integer, ForeignKey("issuers.id"))
+    username: Mapped[str] = mapped_column(String, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String)
+
+    # pylint: disable=not-callable
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
+
+    issuer: Mapped["Issuer"] = relationship("Issuer", back_populates="auth")
