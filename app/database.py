@@ -14,7 +14,7 @@ engine = create_engine(
     max_overflow=20,
     pool_timeout=20,
     pool_recycle=300,
-    echo=True
+    echo=True,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -46,6 +46,7 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
 
 # from sqlalchemy.ext.asyncio import (create_async_engine, AsyncSession, async_sessionmaker)
 # from sqlalchemy.ext.declarative import declarative_base

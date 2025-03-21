@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 # from typing import Optional
 import logging
 from datetime import datetime
+
 # import os
 # from app.core.email_processor import EmailProcessor
 # from app.core.xml_processor import XMLProcessor
@@ -16,8 +18,7 @@ from datetime import datetime
 
 # Configurar logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ logger.info("Iniciando aplicación...")
 
 #         for message in messages:
 #             try:
-                # logger.info(f"Procesando mensaje con URL XML: {message.get('xml_url')}")
+# logger.info(f"Procesando mensaje con URL XML: {message.get('xml_url')}")
 #                 # Descargar XML
 #                 xml_path = email_processor.download_xml(
 #                     message["xml_url"], message["client"]["nit"]

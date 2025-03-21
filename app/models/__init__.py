@@ -5,8 +5,7 @@ from app.models.schemas import (
     Invoice,
     InvoiceSummary,
     ClientSummary,
-    Auth
-
+    Auth,
 )
 
 __all__ = [
@@ -16,5 +15,5 @@ __all__ = [
     "Invoice",
     "InvoiceSummary",
     "ClientSummary",
-    "Auth"
+    "Auth",
 ]
