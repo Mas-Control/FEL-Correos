@@ -30,7 +30,6 @@ class ZohoEmailAPI:
         self.folder_id = settings.ZOHO_FOLDER_ID
         # For testing, force token refresh immediately
         self.token_expiry = datetime.now() - timedelta(seconds=1)
-        self.accounts_url = "https://accounts.zoho.com"
 
     def refresh_access_token(self) -> str:
         """
@@ -44,7 +43,7 @@ class ZohoEmailAPI:
         """
         try:
             token_url = (
-                f"{self.accounts_url}/oauth/v2/token"
+                f"https://accounts.zoho.com/oauth/v2/token"
                 f"?refresh_token={self.refresh_token}"
                 f"&client_id={self.client_id}"
                 f"&client_secret={self.client_secret}"
