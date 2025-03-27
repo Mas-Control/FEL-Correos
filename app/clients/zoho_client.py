@@ -51,7 +51,7 @@ class ZohoEmailAPI:
                 f"&grant_type=refresh_token"
             )
 
-            response = requests.post(token_url, timeout=10)
+            response = requests.post(token_url, timeout=50)
             if response.status_code != 200:
                 logger.error(
                     "Failed to refresh access token: %s", response.text
@@ -94,7 +94,7 @@ class ZohoEmailAPI:
 
         url = f"{self.api_domain}/{self.account_id}/folders"
         headers = {"Authorization": f"Zoho-oauthtoken {self.access_token}"}
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=50)
         if response.status_code != 200:
             logger.error("Error fetching folders: %s", response.text)
             raise requests.exceptions.RequestException(
@@ -119,7 +119,7 @@ class ZohoEmailAPI:
         headers = {"Authorization": f"Zoho-oauthtoken {self.access_token}"}
         logger.info("Fetching unread messages from Zoho...")
         response = requests.get(
-            url, headers=headers, params=params, timeout=10
+            url, headers=headers, params=params, timeout=50
         )
         if response.status_code != 200:
             logger.error("Error fetching messages: %s", response.text)
