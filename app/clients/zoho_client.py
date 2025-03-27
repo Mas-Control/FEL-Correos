@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import logging
 import requests
 from app.config import get_settings
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -84,3 +85,52 @@ class ZohoEmailAPI:
         except Exception as e:
             logger.error("Failed to connect to Zoho Mail API: %s", str(e))
             raise
+    
+    def get_all_folders(self) -> List[Dict]:
+        """
+        Retrieves all folders from the Zoho account.
+        Adjust the endpoint and parameters based on Zoho's API.
+        """
+
+        url = f"{self.api_domain}/{self.account_id}/folders"
+        headers = {"Authorization": f"Zoho-oauthtoken {self.access_token}"}
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code != 200:
+            logger.error("Error fetching folders: %s", response.text)
+            raise requests.exceptions.RequestException(
+                "Error fetching folders from Zoho Mail API"
+            )
+        data = response.json()
+        folders = data.get("data", [])
+        return folders
+
+    def get_unread_messages(self) -> List[Dict]:
+        """
+        Retrieves unread messages from the 'inbox' folder.
+        Adjust the endpoint and parameters based on Zoho's API.
+        """
+        url = (
+            f"{self.api_domain}/{self.account_id}/messages/view"
+        )
+        params = {
+            "folderId": self.folder_id,
+            "status": "unread",
+        }
+        headers = {"Authorization": f"Zoho-oauthtoken {self.access_token}"}
+        logger.info("Fetching unread messages from Zoho...")
+        response = requests.get(
+            url, headers=headers, params=params, timeout=10
+        )
+        if response.status_code != 200:
+            logger.error("Error fetching messages: %s", response.text)
+            raise requests.exceptions.RequestException(
+                "Error fetching messages from Zoho Mail API"
+            )
+        data = response.json()
+        # Adjust parsing based on the actual structure of the response.
+        messages = data.get("data", [])
+        logger.info("Fetched %d unread messages.", len(messages))
+        return messages
+
+
+
