@@ -3,7 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # from typing import Optional
 import logging
-from datetime import datetime
+from app.api.v1.endpoints import (
+    health_check,
+    invoices
+)
 
 # import os
 # from app.core.email_processor import EmailProcessor
@@ -18,13 +21,14 @@ from datetime import datetime
 
 # Configurar logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="SAT Factura Processor",
-    description="API para procesamiento de facturas electrónicas del SAT",
+    title="SAT Inovices Processor",
+    description="Digital SAT's invoices processor",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -38,14 +42,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-logger.info("Iniciando aplicación...")
 
+logger.info("Registering API routes...")
+
+try:
+    app.include_router(health_check.router)
+    app.include_router(invoices.router)
+except Exception as e:
+    logger.error("Error registering API routes: %s", str(e))
+    raise
+
+logger.info("Application initialization completed successfully")
 
 # # Montar archivos estáticos y rutas web
 # app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # app.include_router(web_routes.router)
-
-# settings = get_settings()
 
 
 # def process_new_invoices():
@@ -65,7 +76,7 @@ logger.info("Iniciando aplicación...")
 
 #         for message in messages:
 #             try:
-# logger.info(f"Procesando mensaje con URL XML: {message.get('xml_url')}")
+#                 logger.info(f"Procesando mensaje con URL XML: {message.get('xml_url')}")
 #                 # Descargar XML
 #                 xml_path = email_processor.download_xml(
 #                     message["xml_url"], message["client"]["nit"]
@@ -193,16 +204,6 @@ logger.info("Iniciando aplicación...")
 #     except Exception as e:
 #         logger.error(f"Error obteniendo factura {serie}-{numero}: {str(e)}")
 #         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/health")
-async def health_check():
-    """Endpoint para verificar el estado del servicio"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "version": "1.0.0",
-    }
 
 
 # # Crear directorios necesarios al iniciar la aplicación
