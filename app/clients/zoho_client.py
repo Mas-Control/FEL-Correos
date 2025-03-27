@@ -42,15 +42,15 @@ class ZohoEmailAPI:
         If successful, the response will contain the new access token.
         """
         try:
-            token_url = (
-                f"https://accounts.zoho.com/oauth/v2/token"
-                f"?refresh_token={self.refresh_token}"
-                f"&client_id={self.client_id}"
-                f"&client_secret={self.client_secret}"
-                f"&grant_type=refresh_token"
-            )
+            token_url = "https://accounts.zoho.com/oauth/v2/token"
 
-            response = requests.post(token_url, timeout=50)
+            params = {
+                "refresh_token": self.refresh_token,
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "grant_type": "refresh_token",
+            }
+            response = requests.post(token_url, params=params, timeout=50)
             if response.status_code != 200:
                 logger.error(
                     "Failed to refresh access token: %s", response.text
