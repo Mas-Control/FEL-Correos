@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     ZOHO_API_DOMAIN: str
     ZOHO_ACCOUNT_ID: str
     ZOHO_FOLDER_ID: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     # Database Configuration
     DATABASE_URL: str
@@ -41,6 +42,7 @@ class Settings(BaseSettings):
             "DATABASE_URL",
             "ZOHO_ACCOUNT_ID",
             "ZOHO_FOLDER_ID",
+            "ACCESS_TOKEN_EXPIRE_MINUTES",
         ]
         for field in required_fields:
             if not getattr(self, field):

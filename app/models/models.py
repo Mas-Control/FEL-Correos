@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, Text, func
+from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, Text, func, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, List
 from app.database import Base
@@ -208,6 +208,7 @@ class Auth(Base):
     issuer_id: Mapped[int] = mapped_column(Integer, ForeignKey("issuers.id"))
     username: Mapped[str] = mapped_column(String, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # pylint: disable=not-callable
     created_at: Mapped[DateTime] = mapped_column(
