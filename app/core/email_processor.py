@@ -7,7 +7,7 @@ import os
 from typing import Optional, Tuple, List
 import requests
 from ..config import get_settings
-from ..models.schemas import Factura
+from ..models.models import Factura
 
 
 class EmailProcessor:

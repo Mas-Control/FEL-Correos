@@ -1,8 +1,14 @@
 from fastapi import APIRouter
 from app.clients.zoho_client import ZohoEmailAPI
+from app.middlewares.verify_token_route import VerifyTokenRoute
 
 
-router = APIRouter(prefix="/v1/invoices", tags=["invoices"])
+router = APIRouter(
+    prefix="/v1/invoices",
+    tags=["invoices"],
+    route_class=VerifyTokenRoute,
+)
+
 
 emailProcessor = ZohoEmailAPI()
 

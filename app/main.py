@@ -5,7 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.api.v1.endpoints import (
     health_check,
-    invoices
+    invoices,
+    auth,
+    user
 )
 
 # import os
@@ -48,6 +50,8 @@ logger.info("Registering API routes...")
 try:
     app.include_router(health_check.router)
     app.include_router(invoices.router)
+    app.include_router(auth.router)
+    app.include_router(user.router)
 except Exception as e:
     logger.error("Error registering API routes: %s", str(e))
     raise
