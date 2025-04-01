@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     ZOHO_ACCOUNT_ID: str
     ZOHO_FOLDER_ID: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES: int = 4320
+    ALGORITHM: str
+    JWT_SECRET: str
 
     # Database Configuration
     DATABASE_URL: str
@@ -43,6 +46,9 @@ class Settings(BaseSettings):
             "ZOHO_ACCOUNT_ID",
             "ZOHO_FOLDER_ID",
             "ACCESS_TOKEN_EXPIRE_MINUTES",
+            "REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES",
+            "ALGORITHM",
+            "JWT_SECRET"
         ]
         for field in required_fields:
             if not getattr(self, field):
