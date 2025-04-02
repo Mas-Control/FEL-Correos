@@ -102,6 +102,10 @@ class ZohoEmailAPI:
         data = response.json()
         folders = data.get("data", [])
         return folders
+    
+
+
+
 
     def get_unread_messages(self) -> List[Dict]:
         """
@@ -126,9 +130,74 @@ class ZohoEmailAPI:
                 "Error fetching messages from Zoho Mail API"
             )
         data = response.json()
-        # Adjust parsing based on the actual structure of the response.
         messages = data.get("data", [])
         logger.info("Fetched %d unread messages.", len(messages))
         return messages
 
 
+    def get_email_content(self, message_id: str) -> str:
+        """
+        Retrieves the HTML content of an email by message ID.
+        
+        Args:
+            message_id (str): The ID of the email message.
+        
+        Returns:
+            str: The HTML content of the email.
+        """
+        try:
+            self.connect()
+
+            # URL de la API de Zoho Mail
+            url = f"{self.api_domain}/{self.account_id}/folders/{self.folder_id}/messages/{message_id}/content"
+            
+            # Encabezados para la solicitud
+            headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Zoho-oauthtoken {self.access_token}"
+            }
+
+            # Hacer la solicitud GET
+            response = requests.get(url, headers=headers, timeout=50)
+
+            # Verificar si la respuesta es exitosa
+            if response.status_code != 200:
+                logger.error("Error fetching email content: %s", response.text)
+                raise requests.exceptions.RequestException(
+                    "Error fetching email content from Zoho Mail API"
+                )
+
+            # Retornar el contenido HTML del correo
+            email_content = response.json().get("content", "")
+            return email_content
+
+        except Exception as e:
+            logger.error("Failed to fetch email content: %s", str(e))
+            raise
+
+    def get_unread_messages_and_content(self) -> List[Dict]:
+        """
+        Retrieves unread messages from a specific folder and fetches their content.
+        
+        Returns:
+            List[Dict]: A list of dictionaries containing message details and their HTML content.
+        """
+        # Paso 1: Obtener los mensajes no leídos
+        unread_messages = self.get_unread_messages()
+        result = []
+
+        # Paso 2: Obtener el contenido HTML de cada mensaje
+        for message in unread_messages:
+            message_id = message.get("messageId")
+            
+            # Si existe el messageId, obtener el contenido del correo
+            if message_id:
+                try:
+                    email_content = self.get_email_content(message_id)
+                    message['content'] = email_content  # Agregar el contenido al mensaje
+                    result.append(message)  # Agregar el mensaje con su contenido a la lista de resultados
+                except Exception as e:
+                    logger.error(f"Error fetching content for message {message_id}: {e}")
+        
+        return result
