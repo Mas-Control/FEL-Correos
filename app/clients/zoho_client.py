@@ -6,6 +6,7 @@ This class is responsible for connecting to the Zoho Email API.
 
 from datetime import datetime, timedelta
 import logging
+import re
 import requests
 from app.config import get_settings
 from typing import Dict, List
@@ -83,28 +84,7 @@ class ZohoEmailAPI:
             )
         except Exception as e:
             logger.error("Failed to connect to Zoho Mail API: %s", str(e))
-            raise
-    
-    def get_all_folders(self) -> List[Dict]:
-        """
-        Retrieves all folders from the Zoho account.
-        Adjust the endpoint and parameters based on Zoho's API.
-        """
-
-        url = f"{self.api_domain}/{self.account_id}/folders"
-        headers = {"Authorization": f"Zoho-oauthtoken {self.access_token}"}
-        response = requests.get(url, headers=headers, timeout=50)
-        if response.status_code != 200:
-            logger.error("Error fetching folders: %s", response.text)
-            raise requests.exceptions.RequestException(
-                "Error fetching folders from Zoho Mail API"
-            )
-        data = response.json()
-        folders = data.get("data", [])
-        return folders
-    
-
-
+            raise    
 
 
     def get_unread_messages(self) -> List[Dict]:
@@ -137,21 +117,17 @@ class ZohoEmailAPI:
 
     def get_email_content(self, message_id: str) -> str:
         """
-        Retrieves the HTML content of an email by message ID.
-        
-        Args:
-            message_id (str): The ID of the email message.
-        
-        Returns:
-            str: The HTML content of the email.
+        Obtiene el contenido HTML de un correo a partir de su messageId.
         """
         try:
             self.connect()
+            if datetime.now() >= self.token_expiry:
+                self.refresh_access_token()
 
-            # URL de la API de Zoho Mail
+            # URL API de Zoho Mail
             url = f"{self.api_domain}/{self.account_id}/folders/{self.folder_id}/messages/{message_id}/content"
             
-            # Encabezados para la solicitud
+            # Headers
             headers = {
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -167,37 +143,74 @@ class ZohoEmailAPI:
                 raise requests.exceptions.RequestException(
                     "Error fetching email content from Zoho Mail API"
                 )
-
+            data = response.json()
             # Retornar el contenido HTML del correo
-            email_content = response.json().get("content", "")
+            email_content = data.get("data", {}).get("content", "")
             return email_content
 
         except Exception as e:
             logger.error("Failed to fetch email content: %s", str(e))
             raise
+    
+    def extract_xml_link(self, html_content: str) -> str:
+        """ Extrae el enlace de descarga XML del contenido HTML. """
+        match = re.search(r'<a href="(https://felav02\.c\.sat\.gob\.gt/[^\"]+)"', html_content)
+        return match.group(1) if match else "No encontrado"
+    
+    def mark_messages_as_read(self, message_ids: List[str]) -> None:
+        """
+        Marca los mensajes como leídos en Zoho Mail.
+        """
+        url = f"{self.api_domain}/{self.account_id}/updatemessage"
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": f"Zoho-oauthtoken {self.access_token}"
+        }
+        payload = {
+            "mode": "markAsRead",
+            "messageId": message_ids
+        }
+        try:
+            response = requests.put(url, headers=headers, json=payload, timeout=50)
+            if response.status_code != 200:
+                logger.error("Error marking messages as read: %s", response.text)
+                raise requests.exceptions.RequestException("Error marking messages as read")
+            logger.info("Successfully marked messages as read.")
+        except Exception as e:
+            logger.error("Failed to mark messages as read: %s", str(e))
 
     def get_unread_messages_and_content(self) -> List[Dict]:
         """
-        Retrieves unread messages from a specific folder and fetches their content.
-        
-        Returns:
-            List[Dict]: A list of dictionaries containing message details and their HTML content.
+        Obtiene los correos no leídos y luego extrae su el link del xml.
         """
-        # Paso 1: Obtener los mensajes no leídos
+        # Primero, obtener los correos no leídos
         unread_messages = self.get_unread_messages()
-        result = []
 
-        # Paso 2: Obtener el contenido HTML de cada mensaje
-        for message in unread_messages:
-            message_id = message.get("messageId")
-            
-            # Si existe el messageId, obtener el contenido del correo
-            if message_id:
-                try:
-                    email_content = self.get_email_content(message_id)
-                    message['content'] = email_content  # Agregar el contenido al mensaje
-                    result.append(message)  # Agregar el mensaje con su contenido a la lista de resultados
-                except Exception as e:
-                    logger.error(f"Error fetching content for message {message_id}: {e}")
-        
+        # Almacenar los messageId de los correos no leídos
+        message_ids = [message.get("messageId") for message in unread_messages if message.get("messageId")]
+        logger.info(f"Se encontraron {len(message_ids)} correos no leídos.")
+
+        # Ahora, obtener el contenido(link de xml) de cada correo
+        result = []
+        for message_id in message_ids:
+            try:
+                email_content = self.get_email_content(message_id)
+                xml_link = self.extract_xml_link(email_content)
+                result.append({
+                    "messageId": message_id,
+                    "xml_link": xml_link
+                }) 
+            except Exception as e:
+                logger.error(f"Error al obtener el contenido del mensaje {message_id}: {e}")
+
+
+        # Marcar los mensajes como leídos
+        try:
+            self.mark_messages_as_read(message_ids)
+        except Exception as e:
+            logger.error(f"Error al marcar los mensajes como leídos: {e}")
+
         return result
+    
+
