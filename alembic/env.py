@@ -1,13 +1,17 @@
 # pylint: disable=E1101, wrong-import-position, wildcard-import, E0401
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-from app.config import DATABASE_URL
+from app.config import get_settings
 from app.database import Base
 from app.main import logger
-from app.models.schemas import *  # noqa: F403, F401
+from app.models.models import *  # noqa: F403, F401
 
 from alembic import context
 
+# Load settings
+settings = get_settings()
+
+DATABASE_URL = settings.DATABASE_URL
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -80,7 +84,9 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
 
         with context.begin_transaction():
             logger.info("Starting online migration")

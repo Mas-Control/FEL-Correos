@@ -1,58 +1,74 @@
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from functools import lru_cache
-import os
-from pathlib import Path
-from dotenv import load_dotenv
 
 load_dotenv()
 
-# Standard sync database URL
-DATABASE_URL = os.getenv("DATABASE_URL")
-
 
 class Settings(BaseSettings):
-    # Zoho Mail IMAP Configuration (existente)
-    ZOHO_EMAIL: str
-    ZOHO_PASSWORD: str
-    ZOHO_IMAP_SERVER: str
-    ZOHO_IMAP_PORT: int
-    ZOHO_FOLDER: str
+    """
+    Application settings.
+    """
+    # Zoho API Configuration
+    ZOHO_CLIENT_ID: str
+    ZOHO_CLIENT_SECRET: str
+    ZOHO_ACCESS_TOKEN: str
+    ZOHO_REFRESH_TOKEN: str
+    ZOHO_API_DOMAIN: str
+    ZOHO_ACCOUNT_ID: str
+    ZOHO_FOLDER_ID: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES: int = 4320
+    ALGORITHM: str
+    JWT_SECRET: str
 
-    # Zoho Mail SMTP Configuration (nuevo)
-    SMTP_SERVER: str
-    SMTP_PORT: int
-    SMTP_USE_TLS: bool = True
-    SMTP_USERNAME: str
-    SMTP_PASSWORD: str
-    NOTIFICATION_EMAIL: str
-    ALERT_EMAIL: str
-
-    # API Configuration
-    API_HOST: str
-    API_PORT: int
-
-    # Storage Configuration
-    BASE_DIR: Path = Path(__file__).resolve().parent.parent
-    XML_STORAGE_PATH: Path = BASE_DIR / "data" / "xml_files"
-    PROCESSED_DATA_PATH: Path = BASE_DIR / "data" / "processed"
+    # Database Configuration
+    DATABASE_URL: str
 
     class Config:
+        """
+        Configuration for the BaseSettings class.
+        """
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"
+
+    def validate_settings(self):
+        """
+        Perform basic validation of critical settings.
+        Raises ValueError if critical settings are missing.
+        """
+        required_fields = [
+            "ZOHO_CLIENT_ID",
+            "ZOHO_CLIENT_SECRET",
+            "ZOHO_API_DOMAIN",
+            "DATABASE_URL",
+            "ZOHO_ACCOUNT_ID",
+            "ZOHO_FOLDER_ID",
+            "ACCESS_TOKEN_EXPIRE_MINUTES",
+            "REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES",
+            "ALGORITHM",
+            "JWT_SECRET"
+        ]
+        for field in required_fields:
+            if not getattr(self, field):
+                raise ValueError(f"Missing required configuration: {field}")
 
 
 @lru_cache()
-def get_settings():
-    # return Settings()
-    pass
+def get_settings() -> Settings:
+    """
+    Retrieve and validate application settings.
 
+    Returns:
+        Settings: Validated application settings.
 
-# Crear directorios necesarios si no existen
-def create_required_directories():
-    settings = get_settings()
-    # os.makedirs(settings.XML_STORAGE_PATH, exist_ok=True)
-    # os.makedirs(settings.PROCESSED_DATA_PATH, exist_ok=True)
-
-
-# Llamar a la función cuando se importa el módulo
-create_required_directories()
+    Raises:
+        ValueError: If critical settings are missing.
+    """
+    try:
+        settings = Settings()  # type: ignore
+        settings.validate_settings()
+        return settings
+    except ValueError as e:
+        raise ValueError(f"Invalid application settings: {e}")
