@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 
 
 class IssuerBase(BaseModel):
@@ -32,7 +33,7 @@ class IssuerInDBBase(IssuerBase):
     """
     Properties shared by models stored in the database.
     """
-    id: int
+    id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 

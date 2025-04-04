@@ -1,3 +1,8 @@
+"""
+Security module for handling authentication and authorization.
+This module provides functions for user authentication, password hashing,
+token generation, and user access verification.
+"""
 from fastapi import HTTPException, Depends
 from app.database import Session
 from app.schemas.token import Token
@@ -9,6 +14,7 @@ from app.config import get_settings
 from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError, ExpiredSignatureError
 from app.database import get_db
+from uuid import UUID
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -38,7 +44,6 @@ async def get_token(
     try:
         username = username.lower().strip()
         user = db.query(Auth).filter(Auth.username == username).first()
-        print(user.id)
 
         if not user:
             raise HTTPException(status_code=400, detail="User does not exist.")
@@ -58,8 +63,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify if the provided plain password matches the hashed password.
     """
-    print(plain_password)
-    print(hashed_password)
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -97,7 +100,6 @@ async def get_user_token(
         expiration
         time, and token type.
     """
-    print(user.id)
 
     payload = {
         "id": str(user.id)
@@ -214,7 +216,7 @@ async def get_current_user(
             print("payload is none")
             raise HTTPException(
                 status_code=401,
-                detail="Could not validate credentials 1",
+                detail="Could not validate credentials",
             )
 
         user_id = payload.get("id")
@@ -222,10 +224,10 @@ async def get_current_user(
             print("user_id is none")
             raise HTTPException(
                 status_code=401,
-                detail="Could not validate credentials 2",
+                detail="Could not validate credentials",
             )
 
-        # user_id = UUID(user_id)
+        user_id = UUID(user_id)
 
     except ExpiredSignatureError as exc:
         raise HTTPException(
@@ -235,7 +237,7 @@ async def get_current_user(
     except (JWTError, ValueError) as exc:
         raise HTTPException(
             status_code=401,
-            detail="Could not validate credentials 3",
+            detail="Could not validate credentials",
         ) from exc
 
     # Initialize db if not provided
