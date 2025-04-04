@@ -1,13 +1,14 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 
 
 class AuthBase(BaseModel):
     """
     Base schema for Auth entity.
     """
-    issuer_id: int
+    issuer_id: UUID
     username: str
     is_active: bool
     role: str
@@ -34,7 +35,7 @@ class AuthResponse(AuthBase):
     """
     Schema for returning an Auth entity.
     """
-    id: int
+    id: UUID
     created_at: datetime
     updated_at: Optional[datetime]
 

@@ -51,7 +51,6 @@ async def register_user(
             issuer_id=new_issuer.id,
             role="user",
         )
-        print(user.password_hash)
 
         # Create a new user
         db.add(user)
@@ -85,7 +84,6 @@ async def activate_user(
             .filter(Issuer.nit == user_nit.lower().strip())
             .first()
         )
-        print(user.issuer.nit)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
