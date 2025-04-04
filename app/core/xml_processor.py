@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any, List
 import json
 import os
 from decimal import Decimal
-from ..models.schemas import Factura, Emisor, Receptor, Item
+from ..models.models import Factura, Emisor, Receptor, Item
 from ..config import get_settings
 
 

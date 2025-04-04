@@ -35,7 +35,7 @@ run_migrations() {
 # Iniciar el servidor FastAPI con Uvicorn
 start_server() {
     echo "Iniciando FastAPI..."
-    exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+    exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --reload
 }
 
 # Ejecutar los pasos en orden
