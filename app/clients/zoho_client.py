@@ -230,4 +230,41 @@ class ZohoEmailAPI:
 
         return result
     
+    def send_email(
+        self,
+        from_address: str,
+        to_address: str,
+        subject: str,
+        content: str,
+        cc_address: str = "",
+    ) -> Dict:
+        """
+        Sends an email using the Zoho Mail API.
+        """
+        self.connect()
 
+        url = f"{self.api_domain}/{self.account_id}/messages"
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": f"Zoho-oauthtoken {self.access_token}",
+        }
+
+        payload = {
+            "fromAddress": from_address,
+            "toAddress": to_address,
+            "ccAddress": cc_address,
+            "subject": subject,
+            "content": content,
+        }
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=50)
+            if response.status_code != 200:
+                logger.error("Failed to send email: %s", response.text)
+                raise requests.exceptions.RequestException("Failed to send email")
+            logger.info("Email sent successfully.")
+            return response.json()
+        except Exception as e:
+            logger.error("Exception during email sending: %s", str(e))
+            raise
