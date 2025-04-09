@@ -4,6 +4,8 @@ from app.database import get_db
 from app.models import Auth, Issuer
 from app.schemas.issuer import IssuerCreate
 from app.core.security import get_password_hash
+from app.api.v1.endpoints.helpers.user_helper import _send_credentials
+import secrets
 
 
 router = APIRouter(prefix="/v1/users")
@@ -46,12 +48,11 @@ async def register_user(
 
         # Create a new user
         user = Auth(
-            username=(new_issuer.nit.lower().strip() + new_issuer.name),
-            password_hash=get_password_hash("password"),
+            email=issuer.email.lower().strip(),
+            password_hash="",
             issuer_id=new_issuer.id,
             role="user",
         )
-
         # Create a new user
         db.add(user)
         db.commit()
@@ -62,7 +63,7 @@ async def register_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while registering the user. {e}",
         ) from e
-    
+
 
 @router.post(
     "/activate",
@@ -89,11 +90,17 @@ async def activate_user(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found.",
             )
-
+        if user.is_active:
+            return
+        password = secrets.token_urlsafe(13)
+        user.password_hash = get_password_hash(password)
         # Activate the user
         user.is_active = True
         db.commit()
         db.refresh(user)
+
+        # Send credentials to the user
+        _send_credentials(email=user.email, password=password)
 
     except Exception as e:
         raise HTTPException(

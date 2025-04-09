@@ -43,7 +43,7 @@ async def get_token(
     """
     try:
         username = username.lower().strip()
-        user = db.query(Auth).filter(Auth.username == username).first()
+        user = db.query(Auth).filter(Auth.email == username).first()
 
         if not user:
             raise HTTPException(status_code=400, detail="User does not exist.")
