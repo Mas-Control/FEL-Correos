@@ -19,6 +19,7 @@ class IssuerCreate(IssuerBase):
     """
     Properties required to create a new Issuer.
     """
+    email: str
     pass
 
 

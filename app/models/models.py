@@ -181,7 +181,7 @@ class Auth(Base):
         UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
     issuer_id: Mapped[UUID] = mapped_column(UUID, ForeignKey("issuers.id"))
-    username: Mapped[str] = mapped_column(String, unique=True, index=True)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String)
     is_active: Mapped[bool] = mapped_column(Boolean, default=False)
     role: Mapped[str] = mapped_column(String)

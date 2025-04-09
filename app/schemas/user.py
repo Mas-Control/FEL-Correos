@@ -9,7 +9,7 @@ class AuthBase(BaseModel):
     Base schema for Auth entity.
     """
     issuer_id: UUID
-    username: str
+    email: str
     is_active: bool
     role: str
 
@@ -25,7 +25,7 @@ class AuthUpdate(BaseModel):
     """
     Schema for updating an Auth entity.
     """
-    username: Optional[str]
+    email: Optional[str]
     password: Optional[str] = Field(None, min_length=8)
     is_active: Optional[bool]
     role: Optional[str]
