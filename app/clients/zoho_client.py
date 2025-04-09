@@ -9,7 +9,7 @@ import logging
 import re
 import requests
 from app.config import get_settings
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,6 @@ class ZohoEmailAPI:
             logger.error("Failed to connect to Zoho Mail API: %s", str(e))
             raise    
 
-
     def get_all_folders(self) -> List[Dict]:
         """
         Retrieves all folders from the Zoho account.
@@ -104,7 +103,6 @@ class ZohoEmailAPI:
         data = response.json()
         folders = data.get("data", [])
         return folders
-
 
     def get_unread_messages(self) -> List[Dict]:
         """
@@ -133,18 +131,26 @@ class ZohoEmailAPI:
         logger.info("Fetched %d unread messages.", len(messages))
         return messages
 
-
     def get_email_content(self, message_id: str) -> str:
         
-        #Get content HTML of an email from its messageId.
+        """
+        Retrieves the content of a specific email message.
+        Adjust the endpoint and parameters based on Zoho's API.
         
+        Args:
+            message_id (str): The ID of the email message to retrieve.
+            
+            Returns:
+            str: The HTML content of the email message.
+        """
         try:
             self.connect()
             if datetime.now() >= self.token_expiry:
                 self.refresh_access_token()
 
             # Zoho Mail API URL get content of an email
-            url = f"{self.api_domain}/{self.account_id}/folders/{self.folder_id}/messages/{message_id}/content"            
+            base_url = f"{self.api_domain}/{self.account_id}/folders/"
+            url = f"{base_url}{self.folder_id}/messages/{message_id}/content"         
 
             headers = {
                 "Accept": "application/json",
@@ -171,15 +177,28 @@ class ZohoEmailAPI:
     
     def extract_xml_link(self, html_content: str) -> str:
         
-        #Extract the XML download link from the HTML content of the email.
+        """
+        Extracts the XML link from the HTML content of an email.
+        Args:
+            html_content (str): The HTML content of the email.
 
-        match = re.search(r'<a href="(https://felav02\.c\.sat\.gob\.gt/[^\"]+)"', html_content)
+        Returns:
+            str: The extracted XML link.
+        """
+        match = (
+            re.search(
+                r'<a href="(https://felav02\.c\.sat\.gob\.gt/[^\"]+)"',
+                html_content)
+        )
         return match.group(1) if match else "No link found"
     
     def mark_messages_as_read(self, message_ids: List[str]) -> None:
        
-       # mark_messages_as_read in Zoho Mail
-        
+        """
+        Marks the specified messages as read in the Zoho Mail API.
+        Args:
+            message_ids (List[str]): List of message IDs to mark as read.
+        """
         url = f"{self.api_domain}/{self.account_id}/updatemessage"
         headers = {
             "Accept": "application/json",
@@ -191,22 +210,40 @@ class ZohoEmailAPI:
             "messageId": message_ids
         }
         try:
-            response = requests.put(url, headers=headers, json=payload, timeout=50)
+            response = requests.put(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=50
+            )
             if response.status_code != 200:
-                logger.error("Error marking messages as read: %s", response.text)
-                raise requests.exceptions.RequestException("Error marking messages as read")
+                logger.error(
+                    "Error marking messages as read: %s", response.text
+                )
+                raise requests.exceptions.RequestException(
+                    "Error marking messages as read"
+                    )
             logger.info("Successfully marked messages as read.")
         except Exception as e:
             logger.error("Failed to mark messages as read: %s", str(e))
 
     def get_unread_messages_and_content(self) -> List[Dict]:
         
-        # First, get the unread emails
+        """
+        Retrieves unread messages and their content from the Zoho Mail API.
+        Returns:
+            List[Dict]: A list of dictionaries containing message IDs and
+            their content.
+        """
         unread_messages = self.get_unread_messages()
 
         # Store the messageId of unread emails
-        message_ids = [message.get("messageId") for message in unread_messages if message.get("messageId")]
-        logger.info(f"Found {len(message_ids)} unread emails.")
+        message_ids = [
+            message.get("messageId")
+            for message in unread_messages
+            if message.get("messageId")
+        ]
+        logger.info("Found %d unread emails.", len(message_ids))
 
         # Iterate through the message IDs and get the content
         result = []
@@ -219,8 +256,9 @@ class ZohoEmailAPI:
                     "xml_link": xml_link
                 }) 
             except Exception as e:
-                logger.error(f"Error fetching content for message {message_id}: {e}")
-
+                logger.error(
+                    f"Error fetching content for message {message_id}: {e}"
+                )
 
         # Mark the messages as read
         try:
@@ -229,14 +267,14 @@ class ZohoEmailAPI:
             logger.error(f"Error marking messages as read: {e}")
 
         return result
-    
+
     def send_email(
         self,
         from_address: str,
         to_address: str,
         subject: str,
         content: str,
-        cc_address: str = "",
+        cc_address: Optional[str] = None
     ) -> Dict:
         """
         Sends an email using the Zoho Mail API.
@@ -253,16 +291,23 @@ class ZohoEmailAPI:
         payload = {
             "fromAddress": from_address,
             "toAddress": to_address,
-            "ccAddress": cc_address,
+            "ccAddress": cc_address if cc_address else "",
             "subject": subject,
             "content": content,
         }
 
         try:
-            response = requests.post(url, headers=headers, json=payload, timeout=50)
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=50
+            )
             if response.status_code != 200:
                 logger.error("Failed to send email: %s", response.text)
-                raise requests.exceptions.RequestException("Failed to send email")
+                raise requests.exceptions.RequestException(
+                    "Failed to send email"
+                )
             logger.info("Email sent successfully.")
             return response.json()
         except Exception as e:
