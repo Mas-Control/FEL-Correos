@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
-from .database import get_db
+from database import get_db
 from user.models.model import Auth, Issuer
-from .schemas.issuer import IssuerCreate
-from .core.security import get_password_hash
+from schemas.issuer import IssuerCreate
+from core.security import get_password_hash
 from user.user_helper import _send_credentials
 import secrets
 

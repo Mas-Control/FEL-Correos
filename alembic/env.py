@@ -1,11 +1,10 @@
 # pylint: disable=E1101, wrong-import-position, wildcard-import, E0401
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-from app.config import get_settings
-from app.database import Base
-from app.main import logger
-from app.models.models import *  # noqa: F403, F401
-
+from config import get_settings
+from database import Base
+from main import logger
+from user.models.model import *  # noqa: F401, F403
 from alembic import context
 
 # Load settings

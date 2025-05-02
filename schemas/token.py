@@ -36,8 +36,8 @@ class Token(TokenBase):
     Schema representing a token, including additional fields if needed.
 
     Inherits from TokenBase and adds:
-    - refresh_token (Optional[str]): An optional refresh token used to obtain new
-    access tokens.
+    - refresh_token (Optional[str]): An optional refresh token used to obtain
+    new access tokens.
     """
 
     refresh_token: Optional[str] = None

@@ -3,7 +3,7 @@
 from fastapi import Request
 from fastapi.routing import APIRoute
 from fastapi.responses import JSONResponse
-from app.core.security import get_current_user
+from core.security import get_current_user
 
 
 class VerifyTokenRoute(APIRoute):

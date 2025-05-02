@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import logging
 import re
 import requests
-from app.config import get_settings
+from config import get_settings
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)

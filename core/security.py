@@ -4,16 +4,15 @@ This module provides functions for user authentication, password hashing,
 token generation, and user access verification.
 """
 from fastapi import HTTPException, Depends
-from app.database import Session
-from app.schemas.token import Token
-from app.models.models import Auth
+from database import Session, get_db
+from schemas.token import Token
+from user.models.model import Auth
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
-from app.config import get_settings
+from config import get_settings
 from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError, ExpiredSignatureError
-from app.database import get_db
 from uuid import UUID
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

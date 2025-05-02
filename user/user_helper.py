@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from app.clients.zoho_client import ZohoEmailAPI
+from clients.zoho_client import ZohoEmailAPI
 
 zoho_api = ZohoEmailAPI()
 
