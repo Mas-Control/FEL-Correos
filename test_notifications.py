@@ -1,4 +1,4 @@
-from app.core.notifications import NotificationManager
+from core.notifications import NotificationManager
 from datetime import datetime
 import logging
 
