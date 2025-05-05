@@ -13,6 +13,10 @@ from typing import Optional
 from config import get_settings
 from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError, ExpiredSignatureError
+from database import get_db
+from fastapi import Request, HTTPException, Depends
+from functools import wraps
+from typing import Callable, Optional
 from uuid import UUID
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -270,3 +274,61 @@ def get_token_payload(token: str) -> Optional[dict]:
         print("JWTError", token)
         return None
     return payload
+
+
+def api_key_auth(api_key_name: str = "X-API-Key"):
+    """
+    Decorator to implement API key authentication.
+    
+    Args:
+        api_key_name (str): The name of the header field containing the API key.
+            Defaults to "X-API-Key".
+    
+    Returns:
+        Callable: The decorated function.
+    """
+    def decorator(func: Callable):
+        @wraps(func)
+        async def wrapper(request: Request, *args, **kwargs):
+            api_key = request.headers.get(api_key_name)
+            if not api_key:
+                raise HTTPException(
+                    status_code=401,
+                    detail=f"Missing {api_key_name} header"
+                )
+            if api_key != settings.API_KEY:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Invalid API key"
+                )
+            return await func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
+async def get_api_key(request: Request, api_key_name: str = "X-API-Key") -> str:
+    """
+    Dependency to get and validate the API key from request headers.
+    
+    Args:
+        request (Request): The FastAPI request object.
+        api_key_name (str): The name of the header field containing the API key.
+    
+    Returns:
+        str: The validated API key.
+    
+    Raises:
+        HTTPException: If the API key is missing or invalid.
+    """
+    api_key = request.headers.get(api_key_name)
+    if not api_key:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Missing {api_key_name} header"
+        )
+    if api_key != settings.API_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid API key"
+        )
+    return api_key

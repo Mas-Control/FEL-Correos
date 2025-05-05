@@ -5,7 +5,7 @@ import logging
 import os
 import uvicorn
 import requests
-from app.core.notifications import NotificationManager
+from core.notifications import NotificationManager
 
 # Obtener el directorio del proyecto
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         import threading
 
         def run_server():
-            uvicorn.run("app.main:app", host="0.0.0.0", port=8000, log_level="info")
+            uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
 
         server_thread = threading.Thread(target=run_server)
         server_thread.daemon = True

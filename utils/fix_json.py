@@ -1,4 +1,4 @@
-from app.config import get_settings
+from config import get_settings
 import os
 import json
 from datetime import datetime
