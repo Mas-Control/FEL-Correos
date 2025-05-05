@@ -17,7 +17,7 @@ emailProcessor = ZohoEmailAPI()
 @router.get("/unread")
 async def get_unread_emails(api_key: str = Depends(get_api_key)):
     """Get unread emails"""
-    
+
     emailProcessor.connect()
     emails = emailProcessor.get_unread_messages()
     return emails
@@ -34,6 +34,4 @@ async def test_zoho(api_key: str = Depends(get_api_key)):
         return {"status": "success", "access_token": zoho_api.access_token}
     except Exception as e:
         return {"status": "error", "error": str(e)}
-
-# Mark this route as exempt from API key verification
 

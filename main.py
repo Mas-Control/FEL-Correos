@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from health_check.routers import router as health_check
-from invoices.routers import router as invoices
-from auth.routers import router as auth
-from user.routers import router as user
+from invoices.routers import invoices
+from auth.routers import auth
+from users.routers import users
 
 # import os
 # from app.core.email_processor import EmailProcessor
@@ -50,12 +50,13 @@ try:
     app.include_router(health_check.router)
     app.include_router(invoices.router)
     app.include_router(auth.router)
-    app.include_router(user.router)
+    app.include_router(users.router)
 except Exception as e:
     logger.error("Error registering API routes: %s", str(e))
     raise
 
 logger.info("Application initialization completed successfully")
+
 
 # # Montar archivos estáticos y rutas web
 # app.mount("/static", StaticFiles(directory="app/static"), name="static")

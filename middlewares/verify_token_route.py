@@ -3,7 +3,7 @@
 from fastapi import Request
 from fastapi.routing import APIRoute
 from fastapi.responses import JSONResponse
-from core.security import get_current_user
+from core.security import get_current_accountant
 
 
 class VerifyTokenRoute(APIRoute):
@@ -44,7 +44,7 @@ class VerifyTokenRoute(APIRoute):
                     },
                 )
 
-            user_response = await get_current_user(token=token)
+            user_response = await get_current_accountant(token=token)
             if not user_response:
                 print("user_response is none")
                 return user_response
