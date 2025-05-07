@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES: int = 4320
     ALGORITHM: str
     JWT_SECRET: str
+    ZOHO_EMAIL: str
 
     # Database Configuration
     DATABASE_URL: str
@@ -50,7 +51,8 @@ class Settings(BaseSettings):
             "REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES",
             "ALGORITHM",
             "JWT_SECRET",
-            "API_KEY"
+            "API_KEY",
+            "ZOHO_EMAIL",
         ]
         for field in required_fields:
             if not getattr(self, field):
@@ -73,4 +75,6 @@ def get_settings() -> Settings:
         settings.validate_settings()
         return settings
     except ValueError as e:
-        raise ValueError(f"Invalid application settings: {e}")
+        raise ValueError(
+            f"Invalid application settings: {e}"
+        ) from e

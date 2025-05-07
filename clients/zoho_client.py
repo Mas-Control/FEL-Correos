@@ -7,14 +7,14 @@ This class is responsible for connecting to the Zoho Email API.
 from datetime import datetime, timedelta
 import logging
 import re
+from typing import Dict, List, Optional
 import requests
 from config import get_settings
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
-class ZohoEmailAPI:
+class ZohoEmailClient:
     """
     Zoho Email API client.
 
@@ -29,7 +29,7 @@ class ZohoEmailAPI:
         self.api_domain = settings.ZOHO_API_DOMAIN
         self.account_id = settings.ZOHO_ACCOUNT_ID
         self.folder_id = settings.ZOHO_FOLDER_ID
-        # For testing, force token refresh immediately
+        self.zoho_email = settings.ZOHO_EMAIL
         self.token_expiry = datetime.now() - timedelta(seconds=1)
 
     def refresh_access_token(self) -> str:
@@ -127,7 +127,7 @@ class ZohoEmailAPI:
                 "Error fetching messages from Zoho Mail API"
             )
         data = response.json()
-        messages = data.get("data", [])
+        messages: list = data.get("data", [])
         logger.info("Fetched %d unread messages.", len(messages))
         return messages
 
@@ -185,12 +185,19 @@ class ZohoEmailAPI:
         Returns:
             str: The extracted XML link.
         """
-        match = (
-            re.search(
-                r'<a href="(https://felav02\.c\.sat\.gob\.gt/[^\"]+)"',
-                html_content)
-        )
-        return match.group(1) if match else "No link found"
+        try:
+            pattern = re.compile(
+                (
+                    r'<a\s+[^>]*href="(https://felav02\.c\.sat\.gob\.gt/[^"]*/'
+                    r'descargaXml/[^"]+)"'
+                ),
+                re.IGNORECASE,
+            )
+            match = pattern.search(html_content)
+            return match.group(1) if match else "No link found"
+        except Exception as e:
+            logger.error("Failed to extract XML link: %s", str(e))
+            raise
     
     def mark_messages_as_read(self, message_ids: List[str]) -> None:
        
@@ -227,50 +234,8 @@ class ZohoEmailAPI:
         except Exception as e:
             logger.error("Failed to mark messages as read: %s", str(e))
 
-    def get_unread_messages_and_content(self) -> List[Dict]:
-        
-        """
-        Retrieves unread messages and their content from the Zoho Mail API.
-        Returns:
-            List[Dict]: A list of dictionaries containing message IDs and
-            their content.
-        """
-        unread_messages = self.get_unread_messages()
-
-        # Store the messageId of unread emails
-        message_ids = [
-            message.get("messageId")
-            for message in unread_messages
-            if message.get("messageId")
-        ]
-        logger.info("Found %d unread emails.", len(message_ids))
-
-        # Iterate through the message IDs and get the content
-        result = []
-        for message_id in message_ids:
-            try:
-                email_content = self.get_email_content(message_id)
-                xml_link = self.extract_xml_link(email_content)
-                result.append({
-                    "messageId": message_id,
-                    "xml_link": xml_link
-                }) 
-            except Exception as e:
-                logger.error(
-                    f"Error fetching content for message {message_id}: {e}"
-                )
-
-        # Mark the messages as read
-        try:
-            self.mark_messages_as_read(message_ids)
-        except Exception as e:
-            logger.error(f"Error marking messages as read: {e}")
-
-        return result
-
     def send_email(
         self,
-        from_address: str,
         to_address: str,
         subject: str,
         content: str,
@@ -289,7 +254,7 @@ class ZohoEmailAPI:
         }
 
         payload = {
-            "fromAddress": from_address,
+            "fromAddress": self.zoho_email,
             "toAddress": to_address,
             "ccAddress": cc_address if cc_address else "",
             "subject": subject,

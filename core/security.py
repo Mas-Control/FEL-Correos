@@ -3,20 +3,17 @@ Security module for handling authentication and authorization.
 This module provides functions for user authentication, password hashing,
 token generation, and user access verification.
 """
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, Request
 from database import Session, get_db
 from schemas.token import Token
 from models.models import Accountants
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from typing import Optional
+from typing import Optional, Callable
 from config import get_settings
 from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError, ExpiredSignatureError
-from database import get_db
-from fastapi import Request, HTTPException, Depends
 from functools import wraps
-from typing import Callable, Optional
 from uuid import UUID
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -304,7 +301,8 @@ def api_key_auth(api_key_name: str = "X-API-Key"):
     Decorator to implement API key authentication.
     
     Args:
-        api_key_name (str): The name of the header field containing the API key.
+        api_key_name (str): The name of the header field containing the API
+        key.
             Defaults to "X-API-Key".
     
     Returns:
@@ -329,13 +327,16 @@ def api_key_auth(api_key_name: str = "X-API-Key"):
     return decorator
 
 
-async def get_api_key(request: Request, api_key_name: str = "X-API-Key") -> str:
+async def get_api_key(
+        request: Request, api_key_name: str = "X-API-Key"
+) -> str:
     """
     Dependency to get and validate the API key from request headers.
     
     Args:
         request (Request): The FastAPI request object.
-        api_key_name (str): The name of the header field containing the API key.
+        api_key_name (str): The name of the header field containing the API
+        key.
     
     Returns:
         str: The validated API key.

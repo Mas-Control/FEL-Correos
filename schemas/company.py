@@ -19,6 +19,7 @@ class CompanyCreate(CompanyBase):
     """
     email: EmailStr
     name: str
+    nit: str
     accountant_email: Optional[EmailStr] = None
 
 

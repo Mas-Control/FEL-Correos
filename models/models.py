@@ -1,7 +1,10 @@
+# pylint: disable=too-few-public-methods
 from sqlalchemy import (
-    Integer, String, Float, DateTime, ForeignKey, func, Boolean, JSON
+    Integer, String, Float, ForeignKey, func, Boolean, DateTime, JSON
 )
+from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
+from uuid import UUID as standardUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, List
 from database import Base
@@ -15,12 +18,12 @@ class Issuer(Base):
     """
     __tablename__ = "issuers"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
     )
-    nit: Mapped[str] = mapped_column(String, unique=True, index=True)
+    nit: Mapped[str] = mapped_column(String, index=True)
     name: Mapped[str] = mapped_column(String)
     commercial_name: Mapped[Optional[str]] = mapped_column(
         String, nullable=True
@@ -28,13 +31,27 @@ class Issuer(Base):
     establishment_code: Mapped[Optional[str]] = mapped_column(
         String, nullable=True
     )
-    address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )
+    department: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )
+    municipality: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )
+    postal_code: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )
+    country: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )
 
     # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
 
@@ -52,65 +69,28 @@ class Recipient(Base):
     """
     __tablename__ = "recipients"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
     )
-    nit: Mapped[str] = mapped_column(String, unique=True, index=True)
+    nit: Mapped[str] = mapped_column(String, index=True)
     name: Mapped[str] = mapped_column(String)
-    address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )
 
     # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
 
     # One-to-many relationship: one recipient can have many invoices
     invoices: Mapped[List["Invoices"]] = relationship(
         "Invoices", back_populates="recipient"
-    )
-
-
-class Item(Base):
-    """
-    Represents the 'Item' entity within an invoice.
-    An item is a line entry in an invoice, detailing the quantity, description,
-    price, and associated taxes.
-    """
-    __tablename__ = "items"
-
-    id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        server_default=func.gen_random_uuid()
-    )
-    invoice_id: Mapped[UUID] = mapped_column(UUID, ForeignKey("invoices.id"))
-    line_number: Mapped[int] = mapped_column(Integer)
-    good_or_service: Mapped[str] = mapped_column(String)
-    quantity: Mapped[Float] = mapped_column(Float)
-    unit_of_measure: Mapped[str] = mapped_column(String)
-    description: Mapped[str] = mapped_column(String)
-    unit_price: Mapped[Float] = mapped_column(Float)
-    price: Mapped[Float] = mapped_column(Float)
-    discount: Mapped[Float] = mapped_column(Float)
-    total: Mapped[Float] = mapped_column(Float)
-    taxes: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-
-    # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
-        DateTime, nullable=False, server_default=func.now()
-    )
-    updated_at: Mapped[DateTime] = mapped_column(
-        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
-    )
-
-    # One-to-one relationship: one item belongs to one invoice
-    invoice: Mapped["Invoices"] = relationship(
-        "Invoices", back_populates="items"
     )
 
 
@@ -122,47 +102,50 @@ class Invoices(Base):
     """
     __tablename__ = "invoices"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
     )
-    company_id: Mapped[UUID] = mapped_column(
+    company_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("companies.id"), nullable=False, index=True
     )
     authorization_number: Mapped[str] = mapped_column(String)
     series: Mapped[str] = mapped_column(String)
     number: Mapped[str] = mapped_column(String)
     document_type: Mapped[str] = mapped_column(String)
-    issuer_id: Mapped[UUID] = mapped_column(UUID, ForeignKey("issuers.id"))
-    recipient_id: Mapped[UUID] = mapped_column(
+    issuer_id: Mapped[standardUUID] = mapped_column(
+        UUID, ForeignKey("issuers.id")
+    )
+    recipient_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("recipients.id")
     )
-    total: Mapped[Float] = mapped_column(Float)
-    vat: Mapped[Float] = mapped_column(Float)
+    total: Mapped[float] = mapped_column(Float)
+    vat: Mapped[float] = mapped_column(Float)
     currency: Mapped[str] = mapped_column(String, default="GTQ")
     xml_url: Mapped[str] = mapped_column(String)
-    certifier_name: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True
-    )
-    certifier_nit: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # pylint: disable=not-callable
-    emission_date: Mapped[DateTime] = mapped_column(
+    emission_date: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )
-    processing_date: Mapped[DateTime] = mapped_column(
+    processing_date: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=True,
         server_default=func.now(),
         onupdate=func.now()
+    )
+
+    # One-to-many relationship: one invoice can have many items
+    items: Mapped[List["Item"]] = relationship(
+        "Item", back_populates="invoice"
     )
 
     # One-to-one relationship: one invoice belongs to one company
@@ -178,9 +161,46 @@ class Invoices(Base):
     recipient: Mapped["Recipient"] = relationship(
         "Recipient", back_populates="invoices"
     )
-    # One-to-many relationship: one invoice can have many items
-    items: Mapped[List["Item"]] = relationship(
-        "Item", back_populates="invoice"
+
+
+class Item(Base):
+    """
+    Represents the 'Item' entity within an invoice.
+    An item is a line entry in an invoice, detailing the quantity, description,
+    price, and associated taxes.
+    """
+    __tablename__ = "items"
+
+    id: Mapped[standardUUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid()
+    )
+    invoice_id: Mapped[standardUUID] = mapped_column(
+        UUID, ForeignKey("invoices.id")
+    )
+    line_number: Mapped[int] = mapped_column(Integer)
+    good_or_service: Mapped[str] = mapped_column(String)
+    quantity: Mapped[float] = mapped_column(Float)
+    unit_of_measure: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String)
+    unit_price: Mapped[float] = mapped_column(Float)
+    price: Mapped[float] = mapped_column(Float)
+    discount: Mapped[float] = mapped_column(Float)
+    total: Mapped[float] = mapped_column(Float)
+    taxes: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True) 
+
+    # pylint: disable=not-callable
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
+
+    # One-to-one relationship: one item belongs to one invoice
+    invoice: Mapped["Invoices"] = relationship(
+        "Invoices", back_populates="items"
     )
 
 
@@ -192,24 +212,24 @@ class InvoicesSummaries(Base):
     """
     __tablename__ = "invoices_summaries"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
     )
-    client_summary_id: Mapped[UUID] = mapped_column(
+    client_summary_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("client_summaries.id")
     )
     authorization_number: Mapped[str] = mapped_column(String)
-    emission_date: Mapped[DateTime] = mapped_column(DateTime)
+    emission_date: Mapped[datetime] = mapped_column(DateTime)
     issuer_name: Mapped[str] = mapped_column(String)
     issuer_nit: Mapped[str] = mapped_column(String)
-    total: Mapped[Float] = mapped_column(Float)
+    total: Mapped[float] = mapped_column(Float)
     # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
 
@@ -228,7 +248,7 @@ class ClientsSummaries(Base):
     """
     __tablename__ = "client_summaries"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
@@ -236,12 +256,12 @@ class ClientsSummaries(Base):
     nit: Mapped[str] = mapped_column(String)
     name: Mapped[str] = mapped_column(String)
     total_invoices: Mapped[int] = mapped_column(Integer)
-    total_sum: Mapped[Float] = mapped_column(Float)
+    total_sum: Mapped[float] = mapped_column(Float)
     # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
 
@@ -258,12 +278,12 @@ class Accountants(Base):
     """
     __tablename__ = "accountants"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
     )
-    subscription_id: Mapped[UUID] = mapped_column(
+    subscription_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("subscriptions.id")
     )
     first_name: Mapped[Optional[str]] = mapped_column(
@@ -281,10 +301,10 @@ class Accountants(Base):
     )
 
     # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
 
@@ -307,7 +327,7 @@ class Companies(Base):
     """
     __tablename__ = "companies"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
@@ -315,14 +335,15 @@ class Companies(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     api_key: Mapped[str] = mapped_column(String, unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String, unique=True, index=True)
+    nit: Mapped[str] = mapped_column(String, unique=True, index=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, server_default="false", nullable=False
     )
     # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
 
@@ -344,25 +365,25 @@ class AccountantCompanies(Base):
     """
     __tablename__ = "accountant_companies"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
     )
-    accountant_id: Mapped[UUID] = mapped_column(
+    accountant_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("accountants.id")
     )
-    company_id: Mapped[UUID] = mapped_column(
+    company_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("companies.id")
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean, server_default="false", nullable=False
     )
     # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
     # One-to-one relationship: one accountant belongs to one company
@@ -383,7 +404,7 @@ class Subscriptions(Base):
     """
     __tablename__ = "subscriptions"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[standardUUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         server_default=func.gen_random_uuid()
@@ -396,10 +417,10 @@ class Subscriptions(Base):
     )
 
     # pylint: disable=not-callable
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
 

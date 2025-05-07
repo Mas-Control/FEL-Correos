@@ -15,7 +15,7 @@ from schemas.accountant import AccountantCreate, AccountantUpdate
 from schemas.company import CompanyCreate, CompanyUpdate
 from core.security import get_password_hash
 import secrets
-from users.user_helper import (
+from users.helper import (
     _send_credentials, _get_subscription_by_name
 )
 from logging import getLogger
@@ -161,6 +161,7 @@ async def register_company(
         new_company = Companies()
         new_company.email = company.email.lower().strip()
         new_company.name = company.name
+        new_company.nit = company.nit
 
         db.add(new_company)
         db.commit()
@@ -207,7 +208,7 @@ async def activate_company(
     db: Session = Depends(get_db),
 ) -> None:
     """
-    Activate a accountant and send credentials.
+    Activate a company and send credentials.
     """
     try:
         # Check if the accountant exists

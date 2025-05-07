@@ -1,8 +1,9 @@
 from fastapi import HTTPException, status
-from clients.zoho_client import ZohoEmailAPI
+from clients.zoho_client import ZohoEmailClient
 from models.models import Subscriptions
 
-zoho_api = ZohoEmailAPI()
+zoho_client = ZohoEmailClient()
+zoho_client.connect()
 
 
 def _send_credentials(
@@ -13,11 +14,11 @@ def _send_credentials(
     """
     Send credentials to the user.
     """
+
     try:
-        zoho_api.connect()
         if not email or not password:
             raise ValueError("Email and hashed password cannot be empty.")
-        
+
         # Prepare the email content
         content = (
             f"""Your credentials are:
@@ -29,10 +30,9 @@ def _send_credentials(
             content = f"Your API key is: {password}"
 
         # Send email using Zoho API
-        zoho_api.send_email(
+        zoho_client.send_email(
             to_address=email,
             subject="Welcome to Control Tax!",
-            from_address='compartida@control.com.gt',
             content=content
         )
 

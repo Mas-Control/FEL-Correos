@@ -1,8 +1,8 @@
 """“initial”
 
-Revision ID: 8abd22be1aae
+Revision ID: 4cf737ead86b
 Revises: 
-Create Date: 2025-05-05 13:00:22.822478
+Create Date: 2025-05-07 12:32:44.906212
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8abd22be1aae'
+revision: str = '4cf737ead86b'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -36,6 +36,7 @@ def upgrade() -> None:
     sa.Column('email', sa.String(), nullable=False),
     sa.Column('api_key', sa.String(), nullable=True),
     sa.Column('name', sa.String(), nullable=False),
+    sa.Column('nit', sa.String(), nullable=False),
     sa.Column('is_active', sa.Boolean(), server_default='false', nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
@@ -44,6 +45,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_companies_email'), 'companies', ['email'], unique=True)
     op.create_index(op.f('ix_companies_name'), 'companies', ['name'], unique=True)
+    op.create_index(op.f('ix_companies_nit'), 'companies', ['nit'], unique=True)
     op.create_table('issuers',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
     sa.Column('nit', sa.String(), nullable=False),
@@ -51,21 +53,25 @@ def upgrade() -> None:
     sa.Column('commercial_name', sa.String(), nullable=True),
     sa.Column('establishment_code', sa.String(), nullable=True),
     sa.Column('address', sa.String(), nullable=True),
+    sa.Column('department', sa.String(), nullable=True),
+    sa.Column('municipality', sa.String(), nullable=True),
+    sa.Column('postal_code', sa.String(), nullable=True),
+    sa.Column('country', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_issuers_nit'), 'issuers', ['nit'], unique=True)
+    op.create_index(op.f('ix_issuers_nit'), 'issuers', ['nit'], unique=False)
     op.create_table('recipients',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
     sa.Column('nit', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('address', sa.String(), nullable=True),
+    sa.Column('email', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_recipients_nit'), 'recipients', ['nit'], unique=True)
+    op.create_index(op.f('ix_recipients_nit'), 'recipients', ['nit'], unique=False)
     op.create_table('subscriptions',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -102,8 +108,6 @@ def upgrade() -> None:
     sa.Column('vat', sa.Float(), nullable=False),
     sa.Column('currency', sa.String(), nullable=False),
     sa.Column('xml_url', sa.String(), nullable=False),
-    sa.Column('certifier_name', sa.String(), nullable=True),
-    sa.Column('certifier_nit', sa.String(), nullable=True),
     sa.Column('emission_date', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('processing_date', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
@@ -174,6 +178,7 @@ def downgrade() -> None:
     op.drop_table('recipients')
     op.drop_index(op.f('ix_issuers_nit'), table_name='issuers')
     op.drop_table('issuers')
+    op.drop_index(op.f('ix_companies_nit'), table_name='companies')
     op.drop_index(op.f('ix_companies_name'), table_name='companies')
     op.drop_index(op.f('ix_companies_email'), table_name='companies')
     op.drop_table('companies')
