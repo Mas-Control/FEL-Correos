@@ -4,7 +4,7 @@ from sqlalchemy import pool
 from config import get_settings
 from database import Base
 from main import logger
-from user.models.model import *  # noqa: F401, F403
+from models.models import *  # noqa: F401, F403
 from alembic import context
 
 # Load settings

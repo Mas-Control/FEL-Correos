@@ -3,20 +3,17 @@ Security module for handling authentication and authorization.
 This module provides functions for user authentication, password hashing,
 token generation, and user access verification.
 """
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, Request
 from database import Session, get_db
 from schemas.token import Token
-from user.models.model import Auth
+from models.models import Accountants
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from typing import Optional
+from typing import Optional, Callable
 from config import get_settings
 from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError, ExpiredSignatureError
-from database import get_db
-from fastapi import Request, HTTPException, Depends
 from functools import wraps
-from typing import Callable, Optional
 from uuid import UUID
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -46,13 +43,16 @@ async def get_token(
     """
     try:
         username = username.lower().strip()
-        user = db.query(Auth).filter(Auth.email == username).first()
+        user = (
+            db.query(Accountants)
+            .filter(Accountants.email == username, Accountants.is_active)
+            .first()
+        )
 
-        if not user:
+        if not user or not user.password:
             raise HTTPException(status_code=400, detail="User does not exist.")
-        if not verify_password(password, user.password_hash):
+        if not verify_password(password, user.password):
             raise HTTPException(status_code=400, detail="Invalid credentials.")
-        _verify_user_access(user=user)
         return await get_user_token(user=user, refresh=True)
 
     except HTTPException as e:
@@ -62,32 +62,52 @@ async def get_token(
         ) from e
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+async def get_refresh_token(token: str, db: Session) -> Token:
+    """
+    Generate a new access token using a valid refresh token.
+
+    Args:
+        token (str): The JWT refresh token.
+        db (Session): The SQLAlchemy database session dependency.
+
+    Returns:
+        dict: A dictionary containing a new access token, refresh token,
+        expiration time, and token type.
+
+    Raises:
+        HTTPException: If the refresh token is invalid or the user is not
+        found.
+    """
+    payload = get_token_payload(token=token)
+    if payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token.",
+        )
+    user_id = payload.get("id", None)
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token.",
+        )
+    user = db.query(Accountants).filter(Accountants.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token.",
+        )
+    return await get_user_token(user=user, refresh_token=token, refresh=True)
+
+
+def verify_password(plain_password: str, password: str) -> bool:
     """
     Verify if the provided plain password matches the hashed password.
     """
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def _verify_user_access(user: Auth) -> None:
-    """
-    Verify the user's access to the system.
-
-    Args:
-        user (User): The user object to verify.
-
-    Raises:
-        HTTPException: If the user's account is inactive or has been deleted.
-    """
-    if not user.is_active:
-        raise HTTPException(
-            status_code=403,
-            detail="Inactive user. Please contact support.",
-        )
+    return pwd_context.verify(plain_password, password)
 
 
 async def get_user_token(
-    user: Auth,
+    user: Accountants,
     refresh_token: Optional[str] = None,
     refresh: bool = False
 ) -> Token:
@@ -201,10 +221,10 @@ def get_password_hash(password: str) -> str:
         ) from e
 
 
-async def get_current_user(
+async def get_current_accountant(
         token: str = Depends(oauth2_scheme),
         db=None
-) -> Auth:
+) -> Accountants:
     """
     Retrieves the current user based on the provided JWT token.
     """
@@ -247,7 +267,7 @@ async def get_current_user(
     if not db:
         db = next(get_db())
 
-    user = db.query(Auth).filter(Auth.id == user_id).first()
+    user = db.query(Accountants).filter(Accountants.id == user_id).first()
     if user is None:
         raise HTTPException(
             status_code=401,
@@ -281,7 +301,8 @@ def api_key_auth(api_key_name: str = "X-API-Key"):
     Decorator to implement API key authentication.
     
     Args:
-        api_key_name (str): The name of the header field containing the API key.
+        api_key_name (str): The name of the header field containing the API
+        key.
             Defaults to "X-API-Key".
     
     Returns:
@@ -296,7 +317,7 @@ def api_key_auth(api_key_name: str = "X-API-Key"):
                     status_code=401,
                     detail=f"Missing {api_key_name} header"
                 )
-            if api_key != settings.API_KEY:
+            if api_key != settings.SCHEDULER_API_KEY:
                 raise HTTPException(
                     status_code=403,
                     detail="Invalid API key"
@@ -306,13 +327,16 @@ def api_key_auth(api_key_name: str = "X-API-Key"):
     return decorator
 
 
-async def get_api_key(request: Request, api_key_name: str = "X-API-Key") -> str:
+async def get_api_key(
+        request: Request, api_key_name: str = "X-API-Key"
+) -> str:
     """
     Dependency to get and validate the API key from request headers.
     
     Args:
         request (Request): The FastAPI request object.
-        api_key_name (str): The name of the header field containing the API key.
+        api_key_name (str): The name of the header field containing the API
+        key.
     
     Returns:
         str: The validated API key.
@@ -326,7 +350,7 @@ async def get_api_key(request: Request, api_key_name: str = "X-API-Key") -> str:
             status_code=401,
             detail=f"Missing {api_key_name} header"
         )
-    if api_key != settings.API_KEY:
+    if api_key != settings.SCHEDULER_API_KEY:
         raise HTTPException(
             status_code=403,
             detail="Invalid API key"

@@ -1,8 +1,8 @@
 """“initial”
 
-Revision ID: f75dfd7ed4f8
+Revision ID: 4cf737ead86b
 Revises: 
-Create Date: 2025-04-04 11:00:12.693173
+Create Date: 2025-05-07 12:32:44.906212
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f75dfd7ed4f8'
+revision: str = '4cf737ead86b'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -31,6 +31,21 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('companies',
+    sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
+    sa.Column('email', sa.String(), nullable=False),
+    sa.Column('api_key', sa.String(), nullable=True),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('nit', sa.String(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), server_default='false', nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('api_key')
+    )
+    op.create_index(op.f('ix_companies_email'), 'companies', ['email'], unique=True)
+    op.create_index(op.f('ix_companies_name'), 'companies', ['name'], unique=True)
+    op.create_index(op.f('ix_companies_nit'), 'companies', ['nit'], unique=True)
     op.create_table('issuers',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
     sa.Column('nit', sa.String(), nullable=False),
@@ -38,35 +53,72 @@ def upgrade() -> None:
     sa.Column('commercial_name', sa.String(), nullable=True),
     sa.Column('establishment_code', sa.String(), nullable=True),
     sa.Column('address', sa.String(), nullable=True),
+    sa.Column('department', sa.String(), nullable=True),
+    sa.Column('municipality', sa.String(), nullable=True),
+    sa.Column('postal_code', sa.String(), nullable=True),
+    sa.Column('country', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_issuers_nit'), 'issuers', ['nit'], unique=True)
+    op.create_index(op.f('ix_issuers_nit'), 'issuers', ['nit'], unique=False)
     op.create_table('recipients',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
     sa.Column('nit', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('address', sa.String(), nullable=True),
+    sa.Column('email', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_recipients_nit'), 'recipients', ['nit'], unique=True)
-    op.create_table('auth',
+    op.create_index(op.f('ix_recipients_nit'), 'recipients', ['nit'], unique=False)
+    op.create_table('subscriptions',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
-    sa.Column('issuer_id', sa.UUID(), nullable=False),
-    sa.Column('username', sa.String(), nullable=False),
-    sa.Column('password_hash', sa.String(), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('role', sa.String(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('description', sa.String(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), server_default='true', nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['issuer_id'], ['issuers.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_auth_username'), 'auth', ['username'], unique=True)
-    op.create_table('invoice_summaries',
+    op.create_table('accountants',
+    sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
+    sa.Column('subscription_id', sa.UUID(), nullable=False),
+    sa.Column('first_name', sa.String(), nullable=True),
+    sa.Column('last_name', sa.String(), nullable=True),
+    sa.Column('email', sa.String(), nullable=False),
+    sa.Column('password', sa.String(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), server_default='false', nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.ForeignKeyConstraint(['subscription_id'], ['subscriptions.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_accountants_email'), 'accountants', ['email'], unique=True)
+    op.create_table('invoices',
+    sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
+    sa.Column('company_id', sa.UUID(), nullable=False),
+    sa.Column('authorization_number', sa.String(), nullable=False),
+    sa.Column('series', sa.String(), nullable=False),
+    sa.Column('number', sa.String(), nullable=False),
+    sa.Column('document_type', sa.String(), nullable=False),
+    sa.Column('issuer_id', sa.UUID(), nullable=False),
+    sa.Column('recipient_id', sa.UUID(), nullable=False),
+    sa.Column('total', sa.Float(), nullable=False),
+    sa.Column('vat', sa.Float(), nullable=False),
+    sa.Column('currency', sa.String(), nullable=False),
+    sa.Column('xml_url', sa.String(), nullable=False),
+    sa.Column('emission_date', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('processing_date', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ),
+    sa.ForeignKeyConstraint(['issuer_id'], ['issuers.id'], ),
+    sa.ForeignKeyConstraint(['recipient_id'], ['recipients.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_invoices_company_id'), 'invoices', ['company_id'], unique=False)
+    op.create_table('invoices_summaries',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
     sa.Column('client_summary_id', sa.UUID(), nullable=False),
     sa.Column('authorization_number', sa.String(), nullable=False),
@@ -79,30 +131,20 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['client_summary_id'], ['client_summaries.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('invoices',
+    op.create_table('accountant_companies',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
-    sa.Column('authorization_number', sa.String(), nullable=False),
-    sa.Column('series', sa.String(), nullable=False),
-    sa.Column('number', sa.String(), nullable=False),
-    sa.Column('document_type', sa.String(), nullable=False),
-    sa.Column('issuer_id', sa.UUID(), nullable=False),
-    sa.Column('recipient_id', sa.UUID(), nullable=False),
-    sa.Column('total', sa.Float(), nullable=False),
-    sa.Column('vat', sa.Float(), nullable=False),
-    sa.Column('currency', sa.String(), nullable=False),
-    sa.Column('xml_path', sa.String(), nullable=False),
-    sa.Column('certifier_name', sa.String(), nullable=True),
-    sa.Column('certifier_nit', sa.String(), nullable=True),
-    sa.Column('emission_date', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('processing_date', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('accountant_id', sa.UUID(), nullable=False),
+    sa.Column('company_id', sa.UUID(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), server_default='false', nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['issuer_id'], ['issuers.id'], ),
-    sa.ForeignKeyConstraint(['recipient_id'], ['recipients.id'], ),
+    sa.ForeignKeyConstraint(['accountant_id'], ['accountants.id'], ),
+    sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('items',
     sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
+    sa.Column('invoice_id', sa.UUID(), nullable=False),
     sa.Column('line_number', sa.Integer(), nullable=False),
     sa.Column('good_or_service', sa.String(), nullable=False),
     sa.Column('quantity', sa.Float(), nullable=False),
@@ -112,10 +154,9 @@ def upgrade() -> None:
     sa.Column('price', sa.Float(), nullable=False),
     sa.Column('discount', sa.Float(), nullable=False),
     sa.Column('total', sa.Float(), nullable=False),
-    sa.Column('taxes', sa.Text(), nullable=True),
+    sa.Column('taxes', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
-    sa.Column('invoice_id', sa.UUID(), nullable=False),
     sa.ForeignKeyConstraint(['invoice_id'], ['invoices.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -126,13 +167,20 @@ def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('items')
+    op.drop_table('accountant_companies')
+    op.drop_table('invoices_summaries')
+    op.drop_index(op.f('ix_invoices_company_id'), table_name='invoices')
     op.drop_table('invoices')
-    op.drop_table('invoice_summaries')
-    op.drop_index(op.f('ix_auth_username'), table_name='auth')
-    op.drop_table('auth')
+    op.drop_index(op.f('ix_accountants_email'), table_name='accountants')
+    op.drop_table('accountants')
+    op.drop_table('subscriptions')
     op.drop_index(op.f('ix_recipients_nit'), table_name='recipients')
     op.drop_table('recipients')
     op.drop_index(op.f('ix_issuers_nit'), table_name='issuers')
     op.drop_table('issuers')
+    op.drop_index(op.f('ix_companies_nit'), table_name='companies')
+    op.drop_index(op.f('ix_companies_name'), table_name='companies')
+    op.drop_index(op.f('ix_companies_email'), table_name='companies')
+    op.drop_table('companies')
     op.drop_table('client_summaries')
     # ### end Alembic commands ###
