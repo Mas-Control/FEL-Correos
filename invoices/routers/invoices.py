@@ -1,13 +1,17 @@
 """Invoices router for handling invoice-related operations."""
 from fastapi import APIRouter
 from clients.zoho_client import ZohoEmailClient
-from fastapi import Depends
-from core.security import get_api_key
+from fastapi import Depends, Header
+
+from core.security import get_api_key, verify_api_key
 from core.services.xml.xml_job import download_parse_delete
 from logging import getLogger
 from sqlalchemy.orm import Session
 from database import get_db
-
+from models.models import Companies
+from models.models import Invoices
+from fastapi import HTTPException, status
+from schemas.invoices import InvoiceListResponse
 logger = getLogger(__name__)
 
 router = APIRouter(
@@ -83,3 +87,84 @@ async def test_zoho(api_key: str = Depends(get_api_key)):
         return {"status": "success", "access_token": zoho_client.access_token}
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+@router.get("/company-invoices", response_model=InvoiceListResponse)
+async def get_company_invoices(
+    api_key: str = Header(..., alias="X-API-Key"),
+    db: Session = Depends(get_db)
+):
+    """Get all invoices with issuer and recipient data for a company based on API key"""
+    try:
+        # Get the company from the database using the API key as authorization code
+        
+        companies = db.query(Companies).all()
+
+        # Find the matching company using hashed key verification
+        company = next((c for c in companies if verify_api_key(api_key, c.api_key)), None)
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization code"
+            )
+        
+        # Get all invoices for the company, including relationships
+        invoices = (
+            db.query(Invoices)
+            .filter(Invoices.company_id == company.id)
+            .all()
+        )
+        
+        # Prepare response with full data
+        return {
+            "status": "success",
+            "company_name": company.name,
+            "company_nit": company.nit,
+            "invoices_count": len(invoices),
+            "invoices": invoices
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching company invoices: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve invoices: {str(e)}"
+        )
+
+@router.get("/company-invoice-count", response_model=dict)
+async def get_company_invoice_count(
+    api_key: str = Header(..., alias="X-API-Key"),
+    db: Session = Depends(get_db)
+):
+    """Get the count of invoices for a company based on API key"""
+    try:
+        # Get the company from the database using the API key
+        companies = db.query(Companies).all()
+
+        # Find the matching company using hashed key verification
+        company = next((c for c in companies if verify_api_key(api_key, c.api_key)), None)
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization code"
+            )
+        
+        # Count the number of invoices for the company
+        invoice_count = db.query(Invoices).filter(Invoices.company_id == company.id).count()
+
+        return {
+            "status": "success",
+            "company_name": company.name,
+            "company_nit": company.nit,
+            "invoice_count": invoice_count
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching invoice count: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve invoice count: {str(e)}"
+        )

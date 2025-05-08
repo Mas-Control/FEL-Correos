@@ -356,3 +356,6 @@ async def get_api_key(
             detail="Invalid API key"
         )
     return api_key
+
+def verify_api_key(plain_api_key: str, hashed_api_key: str) -> bool:
+    return pwd_context.verify(plain_api_key, hashed_api_key)
