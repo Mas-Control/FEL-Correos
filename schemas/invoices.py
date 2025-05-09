@@ -8,8 +8,14 @@ class IssuerSchema(BaseModel):
     nit: str
     name: str
     commercial_name: Optional[str] = None
+    establishment_code: Optional[str] = None
     address: Optional[str] = None
-    address: Optional[str] = None
+    department: Optional[str] = None
+    municipality: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -19,18 +25,25 @@ class RecipientSchema(BaseModel):
     nit: str
     name: str
     email: Optional[str] = None
-    email: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 class ItemSchema(BaseModel):
-    id: UUID  # Change to UUID if your items also use UUIDs for IDs
-    description: str
+    id: UUID
+    invoice_id: UUID
+    line_number: int
+    good_or_service: str
     quantity: float
+    unit_of_measure: str
+    description: str
     unit_price: float
+    price: float
+    discount: float
     total: float
-    total: float
+    taxes: Optional[dict] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
