@@ -25,7 +25,7 @@ class RecipientSchema(BaseModel):
         from_attributes = True
 
 class ItemSchema(BaseModel):
-    id: str  # Change to UUID if your items also use UUIDs for IDs
+    id: UUID  # Change to UUID if your items also use UUIDs for IDs
     description: str
     quantity: float
     unit_price: float
