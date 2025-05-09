@@ -119,7 +119,7 @@ async def _invoice_builder(
 
         issuer, recipient, items = await _build_issuer_recipient_items(data)
         company_id = await _get_companyid_by_nit(
-            issuer.nit, db
+            recipient.nit, db
         )
         if not company_id:
             logger.error(

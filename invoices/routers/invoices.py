@@ -2,7 +2,6 @@
 from fastapi import APIRouter
 from clients.zoho_client import ZohoEmailClient
 from fastapi import Depends, Header
-
 from core.security import get_api_key, verify_api_key
 from core.services.xml.xml_job import download_parse_delete
 from logging import getLogger
@@ -68,7 +67,7 @@ async def process_invoices(
                     }
                 )
                 continue
-            
+
             await download_parse_delete(xml_url, db)
 
             logger.info("Marking email as read, message ID: %s", message_id)
@@ -85,7 +84,7 @@ async def test_zoho(api_key: str = Depends(get_api_key)):
 
     try:
         return {"status": "success", "access_token": zoho_client.access_token}
-    except Exception as e:
+    except HTTPException as e:
         return {"status": "error", "error": str(e)}
 
 
@@ -94,27 +93,32 @@ async def get_company_invoices(
     api_key: str = Header(..., alias="X-API-Key"),
     db: Session = Depends(get_db)
 ):
-    """Get all invoices with issuer and recipient data for a company based on API key"""
+    """Get all invoices with issuer and recipient data for a company based on
+    API key
+    """
     try:
-        # Get the company from the database using the API key as authorization code
-        
+        # Get the company from the database using the API key as authorization
+        # code
+
         companies = db.query(Companies).all()
 
         # Find the matching company using hashed key verification
-        company = next((c for c in companies if verify_api_key(api_key, c.api_key)), None)
+        company = next(
+            (c for c in companies if verify_api_key(api_key, c.api_key)), None
+        )
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authorization code"
             )
-        
+
         # Get all invoices for the company, including relationships
         invoices = (
             db.query(Invoices)
             .filter(Invoices.company_id == company.id)
             .all()
         )
-        
+
         # Serialize invoices using the Pydantic schema
         invoices_data = [InvoiceSchema.from_orm(inv) for inv in invoices]
 
@@ -129,11 +133,12 @@ async def get_company_invoices(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching company invoices: {e}")
+        logger.error("Error fetching company invoices: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve invoices: {str(e)}"
-        )
+        ) from e
+
 
 @router.get("/company-invoice-count", response_model=dict)
 async def get_company_invoice_count(
@@ -146,7 +151,9 @@ async def get_company_invoice_count(
         companies = db.query(Companies).all()
 
         # Find the matching company using hashed key verification
-        company = next((c for c in companies if verify_api_key(api_key, c.api_key)), None)
+        company = next(
+            (c for c in companies if verify_api_key(api_key, c.api_key)), None
+        )
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -154,7 +161,11 @@ async def get_company_invoice_count(
             )
         
         # Count the number of invoices for the company
-        invoice_count = db.query(Invoices).filter(Invoices.company_id == company.id).count()
+        invoice_count = (
+            db.query(Invoices)
+            .filter(Invoices.company_id == company.id)
+            .count()
+        )
 
         return {
             "status": "success",
@@ -166,8 +177,8 @@ async def get_company_invoice_count(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching invoice count: {e}")
+        logger.error("Error fetching invoice count: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve invoice count: {str(e)}"
-        )
+        ) from e

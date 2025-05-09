@@ -199,11 +199,11 @@ async def register_company(
 
 
 @router.patch(
-    "/company/{email}/status",
+    "/company/{nit}/status",
     status_code=status.HTTP_200_OK
 )
 async def activate_company(
-    email: str,
+    nit: str,
     company_upt: CompanyUpdate,
     db: Session = Depends(get_db),
 ) -> None:
@@ -214,7 +214,7 @@ async def activate_company(
         # Check if the accountant exists
         company = (
             db.query(Companies)
-            .filter(Companies.email == email.lower().strip())
+            .filter(Companies.nit == nit)
             .first()
         )
         if not company:
