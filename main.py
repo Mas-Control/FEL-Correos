@@ -28,7 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="SAT Inovices Processor",
+    title="SAT Invoices Processor",
     description="Digital SAT's invoices processor",
     version="1.0.0",
     docs_url="/docs",
