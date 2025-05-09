@@ -11,7 +11,7 @@ from database import get_db
 from models.models import Companies
 from models.models import Invoices
 from fastapi import HTTPException, status
-from schemas.invoices import InvoiceListResponse
+from schemas.invoices import InvoiceListResponse, InvoiceSchema
 logger = getLogger(__name__)
 
 router = APIRouter(
@@ -115,13 +115,16 @@ async def get_company_invoices(
             .all()
         )
         
+        # Serialize invoices using the Pydantic schema
+        invoices_data = [InvoiceSchema.from_orm(inv) for inv in invoices]
+
         # Prepare response with full data
         return {
             "status": "success",
             "company_name": company.name,
             "company_nit": company.nit,
             "invoices_count": len(invoices),
-            "invoices": invoices
+            "invoices": invoices_data
         }
     except HTTPException:
         raise

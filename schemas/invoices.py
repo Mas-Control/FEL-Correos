@@ -1,42 +1,42 @@
 from datetime import datetime
 from typing import List, Optional
+from uuid import UUID
 from pydantic import BaseModel
 
-
 class IssuerSchema(BaseModel):
-    id: str
+    id: UUID
     nit: str
     name: str
     commercial_name: Optional[str] = None
+    address: Optional[str] = None
     address: Optional[str] = None
 
     class Config:
         from_attributes = True
 
-
 class RecipientSchema(BaseModel):
-    id: str
+    id: UUID
     nit: str
     name: str
+    email: Optional[str] = None
     email: Optional[str] = None
 
     class Config:
         from_attributes = True
 
-
 class ItemSchema(BaseModel):
-    id: str
+    id: str  # Change to UUID if your items also use UUIDs for IDs
     description: str
     quantity: float
     unit_price: float
+    total: float
     total: float
 
     class Config:
         from_attributes = True
 
-
 class InvoiceSchema(BaseModel):
-    id: str
+    id: UUID
     authorization_number: str
     series: str
     number: str
