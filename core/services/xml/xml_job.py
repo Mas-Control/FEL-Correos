@@ -1,4 +1,5 @@
 """Download, parse, and delete XML files."""
+
 from pathlib import Path
 from typing import Any, Dict, Optional, List
 import time
@@ -8,9 +9,7 @@ from logging import getLogger
 from sqlalchemy.orm import Session
 import httpx
 import xmltodict
-from models.models import (
-    Invoices, Issuer, Item, Recipient, Companies
-)
+from models.models import Invoices, Issuer, Item, Recipient, Companies
 import asyncio
 
 logger = getLogger(__name__)
@@ -41,23 +40,16 @@ async def download_parse_delete(xml_url: str, db: Session):
                 xml_str = tmp_path.read_text(encoding=enc)
                 break
             except UnicodeDecodeError:
-                logger.error(
-                    "[XML_job] Failed to decode XML with %s encoding",
-                    enc
-                )
+                logger.error("[XML_job] Failed to decode XML with %s encoding", enc)
                 continue
 
         if xml_str is None:
             raw = tmp_path.read_bytes()
             xml_str = raw.decode("utf-8", errors="replace")
 
-        logger.info(
-            "[XML_job] Cleaning invalid control chars (<0x20 except TAB/LF/CR)"
-        )
+        logger.info("[XML_job] Cleaning invalid control chars (<0x20 except TAB/LF/CR)")
         allowed = {"\t", "\n", "\r"}
-        xml_str = "".join(
-            ch for ch in xml_str if ch >= "\x20" or ch in allowed
-        )
+        xml_str = "".join(ch for ch in xml_str if ch >= "\x20" or ch in allowed)
 
         logger.info("[XML_job] Parsing XML into dict...")
         try:
@@ -77,9 +69,7 @@ async def download_parse_delete(xml_url: str, db: Session):
 
             invoice = await _invoice_builder(data, xml_url, db)
             if not invoice:
-                logger.error(
-                    "[XML_job] Failed to build invoice object: %s", xml_url
-                )
+                logger.error("[XML_job] Failed to build invoice object: %s", xml_url)
                 return None
 
             await _save_invoice(invoice, db)
@@ -87,29 +77,20 @@ async def download_parse_delete(xml_url: str, db: Session):
             logger.info("[XML_job] Invoice object built successfully")
 
         except Exception as e:
-            logger.error(
-                "[XML_job] Failed to parse XML: %s", e
-            )
-            raise ValueError(
-                f"[XML_job] Failed to parse XML: {e}"
-            ) from e
+            logger.error("[XML_job] Failed to parse XML: %s", e)
+            raise ValueError(f"[XML_job] Failed to parse XML: {e}") from e
 
     finally:
         logger.info("[XML_job] Deleting temp file %s", tmp_path)
         try:
             tmp_path.unlink(missing_ok=True)
         except Exception as e:
-            logger.error(
-                "[XML_job] Failed to delete temp file %s: %s",
-                tmp_path, e
-            )
+            logger.error("[XML_job] Failed to delete temp file %s: %s", tmp_path, e)
             raise e
 
 
 async def _invoice_builder(
-    data: Dict[str, Any],
-    xml_id: str,
-    db: Session
+    data: Dict[str, Any], xml_id: str, db: Session
 ) -> Optional[Invoices]:
     """
     Build the invoice object using parsed XML data.
@@ -118,14 +99,9 @@ async def _invoice_builder(
         logger.info("[XML_job] Building invoice object...")
 
         issuer, recipient, items = await _build_issuer_recipient_items(data)
-        company_id = await _get_companyid_by_nit(
-            recipient.nit, db
-        )
+        company_id = await _get_companyid_by_nit(recipient.nit, db)
         if not company_id:
-            logger.error(
-                "[XML_job] Company ID not found for NIT %s",
-                issuer.nit
-            )
+            logger.error("[XML_job] Company ID not found for NIT %s", issuer.nit)
             return None
 
         invoice = await _build_invoice(
@@ -134,12 +110,8 @@ async def _invoice_builder(
 
         return invoice
     except Exception as e:
-        logger.error(
-            "[XML_job] Failed to build invoice object: %s", str(e)
-        )
-        raise ValueError(
-            f"[XML_job] Failed to build invoice object: {e}"
-        ) from e
+        logger.error("[XML_job] Failed to build invoice object: %s", str(e))
+        raise ValueError(f"[XML_job] Failed to build invoice object: {e}") from e
 
 
 async def _build_issuer_recipient_items(
@@ -158,16 +130,17 @@ async def _build_issuer_recipient_items(
     issuer.name = issuer_data.get("@NombreEmisor", "")
     issuer.commercial_name = issuer_data.get("@NombreComercial", "")
     issuer.establishment_code = issuer_data.get("@CodigoEstablecimiento", "")
-    issuer.address = issuer_data.get(
-        "dte:DireccionEmisor", {}).get("dte:Direccion", "")
-    issuer.municipality = issuer_data.get(
-        "dte:DireccionEmisor", {}).get("dte:Municipio", "")
-    issuer.department = issuer_data.get(
-        "dte:DireccionEmisor", {}).get("dte:Departamento", "")
-    issuer.postal_code = issuer_data.get(
-        "dte:DireccionEmisor", {}).get("dte:CodigoPostal", "")
-    issuer.country = issuer_data.get(
-        "dte:DireccionEmisor", {}).get("dte:Pais", "")
+    issuer.address = issuer_data.get("dte:DireccionEmisor", {}).get("dte:Direccion", "")
+    issuer.municipality = issuer_data.get("dte:DireccionEmisor", {}).get(
+        "dte:Municipio", ""
+    )
+    issuer.department = issuer_data.get("dte:DireccionEmisor", {}).get(
+        "dte:Departamento", ""
+    )
+    issuer.postal_code = issuer_data.get("dte:DireccionEmisor", {}).get(
+        "dte:CodigoPostal", ""
+    )
+    issuer.country = issuer_data.get("dte:DireccionEmisor", {}).get("dte:Pais", "")
 
     # Build Recipient
     recipient_data = issuance_data.get("dte:Receptor", {})
@@ -177,9 +150,7 @@ async def _build_issuer_recipient_items(
     recipient.email = recipient_data.get("@CorreoReceptor", "")
 
     # Build Items
-    items = await _map_items(
-        issuance_data.get("dte:Items", {}).get("dte:Item", [])
-    )
+    items = await _map_items(issuance_data.get("dte:Items", {}).get("dte:Item", []))
 
     return issuer, recipient, items
 
@@ -204,8 +175,8 @@ async def _build_invoice(
     totales = issuance_data["dte:Totales"]
     iva = (
         totales.get("dte:TotalImpuestos", {})
-               .get("dte:TotalImpuesto", {})
-               .get("@TotalMontoImpuesto", "0")
+        .get("dte:TotalImpuesto", {})
+        .get("@TotalMontoImpuesto", "0")
     )
 
     invoice = Invoices()
@@ -246,15 +217,11 @@ async def _map_items(items_raw: Any) -> List[Item]:
                 discount=float(it.get("dte:Descuento", "0")),
                 total=float(it.get("dte:Total", "0")),
                 taxes={
-                        "nombre": taxs.get("dte:NombreCorto", ""),
-                        "codigo": taxs.get("dte:CodigoUnidadGravable", ""),
-                        "monto_gravable": float(
-                            taxs.get("dte:MontoGravable", "0")
-                        ),
-                        "monto_impuesto": float(
-                            taxs.get("dte:MontoImpuesto", "0")
-                        ),
-                    },
+                    "nombre": taxs.get("dte:NombreCorto", ""),
+                    "codigo": taxs.get("dte:CodigoUnidadGravable", ""),
+                    "monto_gravable": float(taxs.get("dte:MontoGravable", "0")),
+                    "monto_impuesto": float(taxs.get("dte:MontoImpuesto", "0")),
+                },
             )
         )
     return mapped
@@ -269,9 +236,7 @@ async def _save_invoice(
         db.commit()
         db.refresh(invoice)
     except Exception as e:
-        logger.error(
-            "[XML_job] Failed to save invoice to database: %s", str(e)
-        )
+        logger.error("[XML_job] Failed to save invoice to database: %s", str(e))
         raise
 
 
@@ -280,20 +245,14 @@ async def _get_companyid_by_nit(
     db: Session,
 ) -> Optional[UUID]:
     try:
-        company = db.query(Companies).filter(
-            Companies.nit == nit
-        ).first()
+        company = db.query(Companies).filter(Companies.nit == nit).first()
         if not company:
-            logger.error(
-                "[XML_job] Company with NIT %s not found", nit
-            )
+            logger.error("[XML_job] Company with NIT %s not found", nit)
             return None
         return company.id
 
     except Exception as e:
-        logger.error(
-            "[XML_job] Failed to get company by NIT %s: %s", nit, str(e)
-        )
+        logger.error("[XML_job] Failed to get company by NIT %s: %s", nit, str(e))
         raise
 
 
@@ -316,13 +275,13 @@ async def _download_xml(
         except (httpx.RequestError, httpx.HTTPStatusError) as e:
             logger.error(
                 "[XML_job] Failed to download XML (attempt %d/%d): %s",
-                attempt + 1, max_retries, str(e)
+                attempt + 1,
+                max_retries,
+                str(e),
             )
             if attempt + 1 == max_retries:
                 raise
-            logger.info(
-                "[XML_job] Retrying in %d seconds...", retry_delay
-            )
+            logger.info("[XML_job] Retrying in %d seconds...", retry_delay)
             await asyncio.sleep(retry_delay)
             retry_delay += 1
     return None

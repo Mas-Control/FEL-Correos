@@ -3,6 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel
 
+
 class IssuerSchema(BaseModel):
     id: UUID
     nit: str
@@ -20,6 +21,7 @@ class IssuerSchema(BaseModel):
     class Config:
         from_attributes = True
 
+
 class RecipientSchema(BaseModel):
     id: UUID
     nit: str
@@ -28,6 +30,7 @@ class RecipientSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class ItemSchema(BaseModel):
     id: UUID
@@ -47,6 +50,7 @@ class ItemSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class InvoiceSchema(BaseModel):
     id: UUID

@@ -3,6 +3,7 @@ Security module for handling authentication and authorization.
 This module provides functions for user authentication, password hashing,
 token generation, and user access verification.
 """
+
 from fastapi import HTTPException, Depends, Request
 from database import Session, get_db
 from schemas.token import Token
@@ -21,11 +22,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 settings = get_settings()
 
 
-async def get_token(
-    username: str, password: str, db: Session
-) -> Token:
+async def get_token(username: str, password: str, db: Session) -> Token:
     """
-    Authenticate a user based on their email and password and generate an 
+    Authenticate a user based on their email and password and generate an
     access and refresh token.
 
     Args:
@@ -107,9 +106,7 @@ def verify_password(plain_password: str, password: str) -> bool:
 
 
 async def get_user_token(
-    user: Accountants,
-    refresh_token: Optional[str] = None,
-    refresh: bool = False
+    user: Accountants, refresh_token: Optional[str] = None, refresh: bool = False
 ) -> Token:
     """
     Generate access and refresh tokens for the user.
@@ -119,14 +116,12 @@ async def get_user_token(
         refresh_token (Optional[str]): An existing refresh token, if available.
 
     Returns:
-        dict: A dictionary containing the access token, refresh token, 
+        dict: A dictionary containing the access token, refresh token,
         expiration
         time, and token type.
     """
 
-    payload = {
-        "id": str(user.id)
-    }
+    payload = {"id": str(user.id)}
 
     if settings.ACCESS_TOKEN_EXPIRE_MINUTES is None:
         raise HTTPException(
@@ -136,17 +131,13 @@ async def get_user_token(
                 configuration."""
             ),
         )
-    access_token_expiry = timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    access_token_expiry = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(payload, access_token_expiry)
     if not refresh_token or refresh:
         refresh_token_expiry = timedelta(
             minutes=settings.REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES or 4320
         )
-        refresh_token = await create_refresh_token(
-            payload, refresh_token_expiry
-        )
+        refresh_token = await create_refresh_token(payload, refresh_token_expiry)
 
     expires_in = access_token_expiry.total_seconds()
 
@@ -222,8 +213,7 @@ def get_password_hash(password: str) -> str:
 
 
 async def get_current_accountant(
-        token: str = Depends(oauth2_scheme),
-        db=None
+    token: str = Depends(oauth2_scheme), db=None
 ) -> Accountants:
     """
     Retrieves the current user based on the provided JWT token.
@@ -299,63 +289,55 @@ def get_token_payload(token: str) -> Optional[dict]:
 def api_key_auth(api_key_name: str = "X-API-Key"):
     """
     Decorator to implement API key authentication.
-    
+
     Args:
         api_key_name (str): The name of the header field containing the API
         key.
             Defaults to "X-API-Key".
-    
+
     Returns:
         Callable: The decorated function.
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
             api_key = request.headers.get(api_key_name)
             if not api_key:
                 raise HTTPException(
-                    status_code=401,
-                    detail=f"Missing {api_key_name} header"
+                    status_code=401, detail=f"Missing {api_key_name} header"
                 )
             if api_key != settings.SCHEDULER_API_KEY:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Invalid API key"
-                )
+                raise HTTPException(status_code=403, detail="Invalid API key")
             return await func(request, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
-async def get_api_key(
-        request: Request, api_key_name: str = "X-API-Key"
-) -> str:
+async def get_api_key(request: Request, api_key_name: str = "X-API-Key") -> str:
     """
     Dependency to get and validate the API key from request headers.
-    
+
     Args:
         request (Request): The FastAPI request object.
         api_key_name (str): The name of the header field containing the API
         key.
-    
+
     Returns:
         str: The validated API key.
-    
+
     Raises:
         HTTPException: If the API key is missing or invalid.
     """
     api_key = request.headers.get(api_key_name)
     if not api_key:
-        raise HTTPException(
-            status_code=401,
-            detail=f"Missing {api_key_name} header"
-        )
+        raise HTTPException(status_code=401, detail=f"Missing {api_key_name} header")
     if api_key != settings.SCHEDULER_API_KEY:
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid API key"
-        )
+        raise HTTPException(status_code=403, detail="Invalid API key")
     return api_key
+
 
 def verify_api_key(plain_api_key: str, hashed_api_key: str) -> bool:
     return pwd_context.verify(plain_api_key, hashed_api_key)

@@ -18,9 +18,7 @@ class VerifyTokenRoute(APIRoute):
                 return JSONResponse(
                     status_code=401,
                     content={
-                        "message": (
-                            "Unauthorized - Missing Authorization header"
-                        )
+                        "message": ("Unauthorized - Missing Authorization header")
                     },
                 )
 
@@ -30,18 +28,14 @@ class VerifyTokenRoute(APIRoute):
                 return JSONResponse(
                     status_code=401,
                     content={
-                        "message": (
-                            "Unauthorized - Invalid Authorization format"
-                        )
+                        "message": ("Unauthorized - Invalid Authorization format")
                     },
                 )
 
             if not token:
                 return JSONResponse(
                     status_code=401,
-                    content={
-                        "message": "Unauthorized - Missing token"
-                    },
+                    content={"message": "Unauthorized - Missing token"},
                 )
 
             user_response = await get_current_accountant(token=token)

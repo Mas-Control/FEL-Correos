@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     """
     Application settings.
     """
+
     # Zoho API Configuration
     ZOHO_CLIENT_ID: str
     ZOHO_CLIENT_SECRET: str
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
         """
         Configuration for the BaseSettings class.
         """
+
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"
@@ -75,6 +77,4 @@ def get_settings() -> Settings:
         settings.validate_settings()
         return settings
     except ValueError as e:
-        raise ValueError(
-            f"Invalid application settings: {e}"
-        ) from e
+        raise ValueError(f"Invalid application settings: {e}") from e

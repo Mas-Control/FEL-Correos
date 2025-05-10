@@ -8,6 +8,7 @@ class AccountantBase(BaseModel):
     """
     Base schema for Accountants, shared across different operations.
     """
+
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = False
 
@@ -16,6 +17,7 @@ class AccountantCreate(AccountantBase):
     """
     Schema for creating a new Accountant.
     """
+
     email: EmailStr
     password: Optional[str] = None
     subscription_name: str
@@ -27,6 +29,7 @@ class AccountantUpdate(BaseModel):
     """
     Schema for updating an existing Accountant.
     """
+
     password: Optional[str] = None
     subscription_name: Optional[str] = None
     first_name: Optional[str] = None
@@ -38,6 +41,7 @@ class AccountantRead(AccountantBase):
     """
     Schema for reading Accountant data.
     """
+
     id: UUID
     subscription_name: str
     first_name: Optional[str] = None

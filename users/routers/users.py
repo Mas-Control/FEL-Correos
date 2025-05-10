@@ -2,22 +2,16 @@
 This module defines the API endpoints for managing accountants.
 It includes routes for registering, activating, and managing accountants.
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from models.models import (
-    Accountants,
-    Subscriptions,
-    Companies,
-    AccountantCompanies
-)
+from models.models import Accountants, Subscriptions, Companies, AccountantCompanies
 from schemas.accountant import AccountantCreate, AccountantUpdate
 from schemas.company import CompanyCreate, CompanyUpdate
 from core.security import get_password_hash
 import secrets
-from users.helper import (
-    _send_credentials, _get_subscription_by_name
-)
+from users.helper import _send_credentials, _get_subscription_by_name
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -39,9 +33,11 @@ async def register_accountant(
 
     try:
         # Check if the accountant already exists
-        existing_accountant = db.query(Accountants).filter(
-            Accountants.email == accountant.email.lower().strip()
-        ).first()
+        existing_accountant = (
+            db.query(Accountants)
+            .filter(Accountants.email == accountant.email.lower().strip())
+            .first()
+        )
         if existing_accountant:
             logger.info("Accountant already exists: %s", accountant.email)
             return
@@ -75,10 +71,7 @@ async def register_accountant(
         ) from e
 
 
-@router.patch(
-    "/accountant/{email}/status",
-    status_code=status.HTTP_200_OK
-)
+@router.patch("/accountant/{email}/status", status_code=status.HTTP_200_OK)
 async def activate_accountant(
     email: str,
     accountant_upt: AccountantUpdate,
@@ -117,9 +110,11 @@ async def activate_accountant(
         db.refresh(accountant)
 
         # Uppdate the accountant's relation with the company
-        accountant_company = db.query(AccountantCompanies).filter(
-            AccountantCompanies.accountant_id == accountant.id
-        ).all()
+        accountant_company = (
+            db.query(AccountantCompanies)
+            .filter(AccountantCompanies.accountant_id == accountant.id)
+            .all()
+        )
         for company in accountant_company:
             company.is_active = True
             db.commit()
@@ -135,10 +130,7 @@ async def activate_accountant(
         ) from e
 
 
-@router.post(
-    "/company/register",
-    status_code=status.HTTP_201_CREATED
-)
+@router.post("/company/register", status_code=status.HTTP_201_CREATED)
 async def register_company(
     company: CompanyCreate,
     db: Session = Depends(get_db),
@@ -149,9 +141,11 @@ async def register_company(
 
     try:
         # Check if the accountant already exists
-        existing_company = db.query(Companies).filter(
-            Companies.email == company.email.lower().strip()
-        ).first()
+        existing_company = (
+            db.query(Companies)
+            .filter(Companies.email == company.email.lower().strip())
+            .first()
+        )
         if existing_company:
             logger.info("Company already exists: %s", company.email)
             return
@@ -168,12 +162,12 @@ async def register_company(
         db.refresh(new_company)
 
         if company.accountant_email:
-            logger.info(
-                "Linking company to accountant: %s", company.accountant_email
+            logger.info("Linking company to accountant: %s", company.accountant_email)
+            accountant = (
+                db.query(Accountants)
+                .filter(Accountants.email == company.accountant_email.lower().strip())
+                .first()
             )
-            accountant = db.query(Accountants).filter(
-                Accountants.email == company.accountant_email.lower().strip()
-            ).first()
             if not accountant:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -198,10 +192,7 @@ async def register_company(
         ) from e
 
 
-@router.patch(
-    "/company/{nit}/status",
-    status_code=status.HTTP_200_OK
-)
+@router.patch("/company/{nit}/status", status_code=status.HTTP_200_OK)
 async def activate_company(
     nit: str,
     company_upt: CompanyUpdate,
@@ -212,11 +203,7 @@ async def activate_company(
     """
     try:
         # Check if the accountant exists
-        company = (
-            db.query(Companies)
-            .filter(Companies.nit == nit)
-            .first()
-        )
+        company = db.query(Companies).filter(Companies.nit == nit).first()
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -240,9 +227,7 @@ async def activate_company(
         db.refresh(company)
 
         # Send credentials to the company
-        _send_credentials(
-            email=company.email, password=api_key, is_company=True
-        )
+        _send_credentials(email=company.email, password=api_key, is_company=True)
 
     except Exception as e:
         raise HTTPException(

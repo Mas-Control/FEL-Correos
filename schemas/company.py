@@ -8,6 +8,7 @@ class CompanyBase(BaseModel):
     """
     Base schema for Companies, shared across different operations.
     """
+
     email: Optional[EmailStr] = None
     name: Optional[str] = None
     is_active: Optional[bool] = False
@@ -17,6 +18,7 @@ class CompanyCreate(CompanyBase):
     """
     Schema for creating a new Company.
     """
+
     email: EmailStr
     name: str
     nit: str
@@ -27,6 +29,7 @@ class CompanyUpdate(CompanyBase):
     """
     Schema for updating an existing Company.
     """
+
     email: Optional[EmailStr] = None
     name: Optional[str] = None
     api_key: Optional[str] = None
@@ -37,6 +40,7 @@ class CompanyRead(CompanyBase):
     """
     Schema for reading Company data.
     """
+
     id: UUID
     created_at: datetime
     updated_at: Optional[datetime]

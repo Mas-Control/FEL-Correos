@@ -6,11 +6,7 @@ zoho_client = ZohoEmailClient()
 zoho_client.connect()
 
 
-def _send_credentials(
-        email: str,
-        password: str,
-        is_company: bool = False
-) -> None:
+def _send_credentials(email: str, password: str, is_company: bool = False) -> None:
     """
     Send credentials to the user.
     """
@@ -20,20 +16,16 @@ def _send_credentials(
             raise ValueError("Email and hashed password cannot be empty.")
 
         # Prepare the email content
-        content = (
-            f"""Your credentials are:
+        content = f"""Your credentials are:
             Username: {email}
             Password: {password}"""
-        )
 
         if is_company:
             content = f"Your API key is: {password}"
 
         # Send email using Zoho API
         zoho_client.send_email(
-            to_address=email,
-            subject="Welcome to Control Tax!",
-            content=content
+            to_address=email, subject="Welcome to Control Tax!", content=content
         )
 
     except HTTPException as e:
