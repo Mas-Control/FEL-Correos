@@ -1,5 +1,5 @@
 """Invoices router for handling invoice-related operations."""
-
+from uuid import UUID
 from fastapi import APIRouter
 from clients.zoho_client import ZohoEmailClient
 from fastapi import Depends, Header
@@ -80,10 +80,25 @@ async def test_zoho(api_key: str = Depends(get_api_key)):
 
 @router.get("/company-invoices", response_model=InvoiceListResponse)
 async def get_company_invoices(
-    api_key: str = Header(..., alias="X-API-Key"), db: Session = Depends(get_db)
+    api_key: str = Header(..., alias="X-API-Key"),
+    db: Session = Depends(get_db),
+    invoice_id: UUID | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None
 ):
-    """Get all invoices with issuer and recipient data for a company based on
-    API key
+    """Get invoices with filters for a company based on API key
+        Args:
+            api_key (str, optional): API key for authorization. Defaults to Header(..., alias="X-API-Key").
+            db (Session, optional): Database session. Defaults to Depends(get_db).
+            invoice_id (int, optional): Filter by invoice ID. Defaults to None.
+            status_code (str, optional): Filter by status code. Defaults to None.
+            date_from (str, optional): Filter by creation date from. Defaults to None.
+            date_to (str, optional): Filter by creation date to. Defaults to None.
+        Raises:
+            HTTPException: 401 if the API key is invalid.
+            HTTPException: 500 if there is a server error.
+        Returns:
+            dict: A dictionary containing the status, company name, company NIT, invoices count, and a list of invoices.
     """
     try:
         # Get the company from the database using the API key as authorization
@@ -100,10 +115,22 @@ async def get_company_invoices(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authorization code",
             )
+        
+        # Get all invoices for the company, including relationships, with limit and offset
+        query = db.query(Invoices).filter(Invoices.company_id == company.id)
 
-        # Get all invoices for the company, including relationships
-        invoices = db.query(Invoices).filter(Invoices.company_id == company.id).all()
+        if invoice_id is not None:
+            query = query.filter(Invoices.id == invoice_id)
+        
+        
+        if date_from is not None:
+            query = query.filter(Invoices.emission_date >= date_from)
 
+        if date_to is not None:
+            query = query.filter(Invoices.emission_date <= date_to)
+        
+        invoices = query.all()
+        
         # Serialize invoices using the Pydantic schema
         invoices_data = [InvoiceSchema.from_orm(inv) for inv in invoices]
 
