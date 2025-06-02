@@ -177,15 +177,27 @@ class ZohoEmailClient:
             str: The extracted XML link.
         """
         try:
-            pattern = re.compile(
-                (
-                    r'<a\s+[^>]*href="(https://felav02\.c\.sat\.gob\.gt/[^"]*/'
-                    r'descargaXml/[^"]+)"'
-                ),
+            # First URL pattern (old)
+            pattern_old = re.compile(
+                r'<a\s+[^>]*href="(https://felav02\.c\.sat\.gob\.gt/[^"]*/descargaXml/[^"]+)"',
                 re.IGNORECASE,
             )
-            match = pattern.search(html_content)
-            return match.group(1) if match else "No link found"
+            match_old = pattern_old.search(html_content)
+            if match_old:
+                return {"XML_Link": match_old.group(1)}
+
+            # Second URL pattern (new)
+            match_new = re.search(
+                r'https://felpub\.c\.sat\.gob\.gt/verificador-web/publico/vistas/descargaXml\.jsf\?cadena=([A-Za-z0-9+/=]+)', 
+                html_content
+            )
+            if match_new:
+                cadena_value = match_new.group(1)
+                final_url = f"https://felav02.c.sat.gob.gt/NotificacionFEL-rest/rest/publico/descargaXml/{cadena_value}"
+                return {"XML_Link": final_url}
+            # If no match is found, return a message
+            return {"XML_Link": "No XML link found in the email content."}
+
         except Exception as e:
             logger.error("Failed to extract XML link: %s", str(e))
             raise
