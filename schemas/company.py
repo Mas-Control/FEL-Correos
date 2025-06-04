@@ -23,6 +23,7 @@ class CompanyCreate(CompanyBase):
     name: str
     nit: str
     accountant_email: Optional[EmailStr] = None
+    subscription_name: Optional[str] = None
 
 
 class CompanyUpdate(CompanyBase):
@@ -34,6 +35,7 @@ class CompanyUpdate(CompanyBase):
     name: Optional[str] = None
     api_key: Optional[str] = None
     is_active: Optional[bool] = None
+    subscription_name: Optional[str] = None
 
 
 class CompanyRead(CompanyBase):
@@ -45,6 +47,7 @@ class CompanyRead(CompanyBase):
     created_at: datetime
     updated_at: Optional[datetime]
     api_key: Optional[str] = None
+    subscription_name: Optional[str] = None
 
     class Config:
         form_attributes = True

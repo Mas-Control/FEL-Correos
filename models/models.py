@@ -268,6 +268,9 @@ class Accountants(Base):
     accountant_companies: Mapped[List["AccountantCompanies"]] = relationship(
         "AccountantCompanies", back_populates="accountant"
     )
+    invoice_requests: Mapped[List["InvoiceRequests"]] = relationship(
+        "InvoiceRequests", back_populates="accountant"
+    )
 
 
 class Companies(Base):
@@ -289,6 +292,9 @@ class Companies(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, server_default="false", nullable=False
     )
+    subscription_id: Mapped[Optional[standardUUID]] = mapped_column(
+        UUID, ForeignKey("subscriptions.id"), nullable=True, default=None
+    )
     # pylint: disable=not-callable
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
@@ -305,6 +311,14 @@ class Companies(Base):
     accountant_companies: Mapped[List["AccountantCompanies"]] = relationship(
         "AccountantCompanies", back_populates="company"
     )
+    invoice_requests: Mapped[List["InvoiceRequests"]] = relationship(
+        "InvoiceRequests", back_populates="company"
+    )
+    # One-to-one relationship: one company can have one subscription
+    subscription: Mapped["Subscriptions"] = relationship(
+        "Subscriptions", back_populates="companies"
+    )
+    
 
 
 class AccountantCompanies(Base):
@@ -357,7 +371,10 @@ class Subscriptions(Base):
     )
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str] = mapped_column(String)
-
+    price: Mapped[float] = mapped_column(Float, default=0.0)
+    currency: Mapped[str] = mapped_column(String, default="GTQ")
+    invoices_limit: Mapped[int] = mapped_column(Integer, default=0)
+    nit_limit: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, server_default="true", nullable=False
     )
@@ -369,8 +386,49 @@ class Subscriptions(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
     )
-
+    # One-to-many relationship: one subscription can have many companies
+    companies: Mapped[List["Companies"]] = relationship(
+        "Companies", back_populates="subscription"
+    )
     # One-to-many relationship: one subscription can have many accountants
     accountants: Mapped[List["Accountants"]] = relationship(
         "Accountants", back_populates="subscription"
+    )
+
+
+class InvoiceRequests(Base):
+    """
+    Represents the 'InvoiceRequests' entity in the system.
+    Tracks the number of invoices requested by companies and accountants.
+    """
+
+    __tablename__ = "invoice_requests"
+
+    id: Mapped[standardUUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    company_id: Mapped[Optional[standardUUID]] = mapped_column(
+        UUID, ForeignKey("companies.id"), nullable=True
+    )
+    accountant_id: Mapped[Optional[standardUUID]] = mapped_column(
+        UUID, ForeignKey("accountants.id"), nullable=True
+    )
+    request_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_request_date: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
+    # pylint: disable=not-callable
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=True, server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    company: Mapped[Optional["Companies"]] = relationship(
+        "Companies", back_populates="invoice_requests"
+    )
+    accountant: Mapped[Optional["Accountants"]] = relationship(
+        "Accountants", back_populates="invoice_requests"
     )
