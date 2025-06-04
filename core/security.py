@@ -307,7 +307,7 @@ def api_key_auth(api_key_name: str = "X-API-Key"):
                 raise HTTPException(
                     status_code=401, detail=f"Missing {api_key_name} header"
                 )
-            if api_key != settings.SCHEDULER_API_KEY:
+            if api_key != settings.API_KEY:
                 raise HTTPException(status_code=403, detail="Invalid API key")
             return await func(request, *args, **kwargs)
 
@@ -334,7 +334,7 @@ async def get_api_key(request: Request, api_key_name: str = "X-API-Key") -> str:
     api_key = request.headers.get(api_key_name)
     if not api_key:
         raise HTTPException(status_code=401, detail=f"Missing {api_key_name} header")
-    if api_key != settings.SCHEDULER_API_KEY:
+    if api_key != settings.API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API key")
     return api_key
 
