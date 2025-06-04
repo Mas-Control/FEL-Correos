@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     ZOHO_ACCOUNT_ID: str
     ZOHO_FOLDER_ID: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
-    SCHEDULER_API_KEY: str
+    API_KEY: str
     REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES: int = 4320
     ALGORITHM: str
     JWT_SECRET: str
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
             "REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES",
             "ALGORITHM",
             "JWT_SECRET",
-            "SCHEDULER_API_KEY",
+            "API_KEY",
             "ZOHO_EMAIL",
         ]
         for field in required_fields:

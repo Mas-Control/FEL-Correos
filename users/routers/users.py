@@ -9,7 +9,7 @@ from database import get_db
 from models.models import Accountants, Subscriptions, Companies, AccountantCompanies
 from schemas.accountant import AccountantCreate, AccountantUpdate
 from schemas.company import CompanyCreate, CompanyUpdate
-from core.security import get_password_hash
+from core.security import get_password_hash, get_api_key
 import secrets
 from users.helper import _send_credentials, _get_subscription_by_name
 from logging import getLogger
@@ -26,6 +26,7 @@ router = APIRouter(prefix="/v1/users", tags=["users"])
 async def register_accountant(
     accountant: AccountantCreate,
     db: Session = Depends(get_db),
+    api_key: str = Depends(get_api_key)
 ) -> None:
     """
     Register a new user.
@@ -76,6 +77,7 @@ async def activate_accountant(
     email: str,
     accountant_upt: AccountantUpdate,
     db: Session = Depends(get_db),
+    api_key: str = Depends(get_api_key)
 ) -> None:
     """
     Activate a accountant and send credentials.
@@ -134,6 +136,7 @@ async def activate_accountant(
 async def register_company(
     company: CompanyCreate,
     db: Session = Depends(get_db),
+    api_key: str = Depends(get_api_key)
 ) -> None:
     """
     Register a new user.
@@ -197,6 +200,7 @@ async def activate_company(
     nit: str,
     company_upt: CompanyUpdate,
     db: Session = Depends(get_db),
+    api_key: str = Depends(get_api_key)
 ) -> None:
     """
     Activate a company and send credentials.
