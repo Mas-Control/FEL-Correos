@@ -1,0 +1,3 @@
+"""
+Invoices package initialization.
+"""

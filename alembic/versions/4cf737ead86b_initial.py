@@ -25,24 +25,36 @@ def upgrade() -> None:
     op.create_table(
         "client_summaries",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("nit", sa.String(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("total_invoices", sa.Integer(), nullable=False),
         sa.Column("total_sum", sa.Float(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
         "companies",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("email", sa.String(), nullable=False),
         sa.Column("api_key", sa.String(), nullable=True),
@@ -50,10 +62,16 @@ def upgrade() -> None:
         sa.Column("nit", sa.String(), nullable=False),
         sa.Column("is_active", sa.Boolean(), server_default="false", nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("api_key"),
@@ -64,7 +82,10 @@ def upgrade() -> None:
     op.create_table(
         "issuers",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("nit", sa.String(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
@@ -76,10 +97,16 @@ def upgrade() -> None:
         sa.Column("postal_code", sa.String(), nullable=True),
         sa.Column("country", sa.String(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -87,16 +114,25 @@ def upgrade() -> None:
     op.create_table(
         "recipients",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("nit", sa.String(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("email", sa.String(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -104,23 +140,35 @@ def upgrade() -> None:
     op.create_table(
         "subscriptions",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=False),
         sa.Column("is_active", sa.Boolean(), server_default="true", nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
         "accountants",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("subscription_id", sa.UUID(), nullable=False),
         sa.Column("first_name", sa.String(), nullable=True),
@@ -129,10 +177,16 @@ def upgrade() -> None:
         sa.Column("password", sa.String(), nullable=True),
         sa.Column("is_active", sa.Boolean(), server_default="false", nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.ForeignKeyConstraint(
             ["subscription_id"],
@@ -144,7 +198,10 @@ def upgrade() -> None:
     op.create_table(
         "invoices",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("company_id", sa.UUID(), nullable=False),
         sa.Column("authorization_number", sa.String(), nullable=False),
@@ -170,10 +227,16 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.ForeignKeyConstraint(
             ["company_id"],
@@ -190,12 +253,18 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        op.f("ix_invoices_company_id"), "invoices", ["company_id"], unique=False
+        op.f("ix_invoices_company_id"),
+        "invoices",
+        ["company_id"],
+        unique=False,
     )
     op.create_table(
         "invoices_summaries",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("client_summary_id", sa.UUID(), nullable=False),
         sa.Column("authorization_number", sa.String(), nullable=False),
@@ -204,10 +273,16 @@ def upgrade() -> None:
         sa.Column("issuer_nit", sa.String(), nullable=False),
         sa.Column("total", sa.Float(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.ForeignKeyConstraint(
             ["client_summary_id"],
@@ -218,16 +293,25 @@ def upgrade() -> None:
     op.create_table(
         "accountant_companies",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("accountant_id", sa.UUID(), nullable=False),
         sa.Column("company_id", sa.UUID(), nullable=False),
         sa.Column("is_active", sa.Boolean(), server_default="false", nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.ForeignKeyConstraint(
             ["accountant_id"],
@@ -242,7 +326,10 @@ def upgrade() -> None:
     op.create_table(
         "items",
         sa.Column(
-            "id", sa.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False
+            "id",
+            sa.UUID(),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
         ),
         sa.Column("invoice_id", sa.UUID(), nullable=False),
         sa.Column("line_number", sa.Integer(), nullable=False),
@@ -256,10 +343,16 @@ def upgrade() -> None:
         sa.Column("total", sa.Float(), nullable=False),
         sa.Column("taxes", sa.JSON(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+            "updated_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
+            nullable=True,
         ),
         sa.ForeignKeyConstraint(
             ["invoice_id"],

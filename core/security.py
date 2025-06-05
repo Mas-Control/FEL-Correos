@@ -7,10 +7,10 @@ token generation, and user access verification.
 from fastapi import HTTPException, Depends, Request
 from database import Session, get_db
 from schemas.token import Token
-from models.models import Accountants
+from models.models import Accountants, Companies
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from typing import Optional, Callable
+from typing import Optional, Callable, Union
 from config import get_settings
 from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError, ExpiredSignatureError
@@ -22,7 +22,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 settings = get_settings()
 
 
-async def get_token(username: str, password: str, db: Session) -> Token:
+async def get_accountant_token(username: str, password: str, db: Session) -> Token:
     """
     Authenticate a user based on their email and password and generate an
     access and refresh token.
@@ -42,23 +42,56 @@ async def get_token(username: str, password: str, db: Session) -> Token:
     """
     try:
         username = username.lower().strip()
-        user = (
-            db.query(Accountants)
-            .filter(Accountants.email == username, Accountants.is_active)
-            .first()
-        )
-
-        if not user or not user.password:
+        user = db.query(Accountants).filter(Accountants.email == username).first()
+        if not user:
             raise HTTPException(status_code=400, detail="User does not exist.")
+        if not user.is_active:
+            raise HTTPException(
+                status_code=401,
+                detail="Account is not active, please contact support",
+            )
         if not verify_password(password, user.password):
             raise HTTPException(status_code=400, detail="Invalid credentials.")
-        return await get_user_token(user=user, refresh=True)
+        return await get_user_token(user=user)
 
     except HTTPException as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid login credentials. {e}",
-        ) from e
+        raise e
+
+
+async def get_company_token(nit: str, api_key: str, db: Session) -> Token:
+    """
+    Authenticate a company based on their NIT and API key and generate an
+    access and refresh token.
+
+    Args:
+        nit (str): The company's NIT number.
+        api_key (str): The company's API key.
+        db (Session): The SQLAlchemy database session dependency.
+
+    Returns:
+        Token: A Token object containing access token, refresh token, expiration
+        time, and token type.
+
+    Raises:
+        HTTPException: If the NIT is not registered, API key is incorrect,
+        or company access is not verified.
+    """
+    try:
+        user = db.query(Companies).filter(Companies.nit == nit).first()
+
+        if not user:
+            raise HTTPException(status_code=400, detail="Company does not exist.")
+        if not user.is_active:
+            raise HTTPException(
+                status_code=401,
+                detail="Account is not active, please contact support",
+            )
+        if not verify_api_key(api_key, user.api_key):
+            raise HTTPException(status_code=400, detail="Invalid credentials.")
+        return await get_user_token(user=user)
+
+    except HTTPException as e:
+        raise e
 
 
 async def get_refresh_token(token: str, db: Session) -> Token:
@@ -106,19 +139,22 @@ def verify_password(plain_password: str, password: str) -> bool:
 
 
 async def get_user_token(
-    user: Accountants, refresh_token: Optional[str] = None, refresh: bool = False
+    user: Union[Accountants, Companies],
+    refresh_token: Optional[str] = None,
+    refresh: bool = False,
 ) -> Token:
     """
     Generate access and refresh tokens for the user.
 
     Args:
-        user (User): The user object for whom the tokens are being generated.
+        user (Union[Accountants, Companies]): The user object (either Accountant or
+            Company) for whom the tokens are being generated.
         refresh_token (Optional[str]): An existing refresh token, if available.
+        refresh (bool): Whether to generate a new refresh token.
 
     Returns:
-        dict: A dictionary containing the access token, refresh token,
-        expiration
-        time, and token type.
+        Token: A Token object containing the access token, refresh token,
+        expiration time, and token type.
     """
 
     payload = {"id": str(user.id)}

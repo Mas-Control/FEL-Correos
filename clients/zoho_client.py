@@ -188,8 +188,8 @@ class ZohoEmailClient:
 
             # Second URL pattern (new)
             match_new = re.search(
-                r'https://felpub\.c\.sat\.gob\.gt/verificador-web/publico/vistas/descargaXml\.jsf\?cadena=([A-Za-z0-9+/=]+)', 
-                html_content
+                r"https://felpub\.c\.sat\.gob\.gt/verificador-web/publico/vistas/descargaXml\.jsf\?cadena=([A-Za-z0-9+/=]+)",
+                html_content,
             )
             if match_new:
                 cadena_value = match_new.group(1)

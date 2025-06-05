@@ -1,4 +1,5 @@
 """Invoices router for handling invoice-related operations."""
+
 from uuid import UUID
 from fastapi import APIRouter
 from clients.zoho_client import ZohoEmailClient
@@ -46,7 +47,10 @@ async def process_invoices(
                 )
 
                 xml_errors.append(
-                    {"messageId": message_id, "error": "Failed to fetch content"}
+                    {
+                        "messageId": message_id,
+                        "error": "Failed to fetch content",
+                    }
                 )
                 continue
             logger.info("Extracting XML link from email content")
@@ -84,21 +88,21 @@ async def get_company_invoices(
     db: Session = Depends(get_db),
     invoice_id: UUID | None = None,
     date_from: str | None = None,
-    date_to: str | None = None
+    date_to: str | None = None,
 ):
     """Get invoices with filters for a company based on API key
-        Args:
-            api_key (str, optional): API key for authorization. Defaults to Header(..., alias="X-API-Key").
-            db (Session, optional): Database session. Defaults to Depends(get_db).
-            invoice_id (int, optional): Filter by invoice ID. Defaults to None.
-            status_code (str, optional): Filter by status code. Defaults to None.
-            date_from (str, optional): Filter by creation date from. Defaults to None.
-            date_to (str, optional): Filter by creation date to. Defaults to None.
-        Raises:
-            HTTPException: 401 if the API key is invalid.
-            HTTPException: 500 if there is a server error.
-        Returns:
-            dict: A dictionary containing the status, company name, company NIT, invoices count, and a list of invoices.
+    Args:
+        api_key (str, optional): API key for authorization. Defaults to Header(..., alias="X-API-Key").
+        db (Session, optional): Database session. Defaults to Depends(get_db).
+        invoice_id (int, optional): Filter by invoice ID. Defaults to None.
+        status_code (str, optional): Filter by status code. Defaults to None.
+        date_from (str, optional): Filter by creation date from. Defaults to None.
+        date_to (str, optional): Filter by creation date to. Defaults to None.
+    Raises:
+        HTTPException: 401 if the API key is invalid.
+        HTTPException: 500 if there is a server error.
+    Returns:
+        dict: A dictionary containing the status, company name, company NIT, invoices count, and a list of invoices.
     """
     try:
         # Get the company from the database using the API key as authorization
@@ -115,22 +119,27 @@ async def get_company_invoices(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authorization code",
             )
-        
+        # Check if the company is active
+        if not company.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account is not active, please contact support",
+            )
+
         # Get all invoices for the company, including relationships, with limit and offset
         query = db.query(Invoices).filter(Invoices.company_id == company.id)
 
         if invoice_id is not None:
             query = query.filter(Invoices.id == invoice_id)
-        
-        
+
         if date_from is not None:
             query = query.filter(Invoices.emission_date >= date_from)
 
         if date_to is not None:
             query = query.filter(Invoices.emission_date <= date_to)
-        
+
         invoices = query.all()
-        
+
         # Serialize invoices using the Pydantic schema
         invoices_data = [InvoiceSchema.from_orm(inv) for inv in invoices]
 
@@ -154,7 +163,8 @@ async def get_company_invoices(
 
 @router.get("/company-invoice-count", response_model=dict)
 async def get_company_invoice_count(
-    api_key: str = Header(..., alias="X-API-Key"), db: Session = Depends(get_db)
+    api_key: str = Header(..., alias="X-API-Key"),
+    db: Session = Depends(get_db),
 ):
     """Get the count of invoices for a company based on API key"""
     try:

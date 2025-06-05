@@ -34,7 +34,8 @@ def install_pre_commit():
         print("pre-commit is not installed. Installing it now...")
         try:
             subprocess.run(
-                [sys.executable, "-m", "pip", "install", "pre-commit"], check=True
+                [sys.executable, "-m", "pip", "install", "pre-commit"],
+                check=True,
             )
             print("pre-commit installed successfully.")
         except subprocess.CalledProcessError as e:

@@ -1,5 +1,18 @@
+"""
+SQLAlchemy models for the application.
+"""
+
 # pylint: disable=too-few-public-methods
-from sqlalchemy import Integer, String, Float, ForeignKey, func, Boolean, DateTime, JSON
+from sqlalchemy import (
+    Integer,
+    String,
+    Float,
+    ForeignKey,
+    func,
+    Boolean,
+    DateTime,
+    JSON,
+)
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import UUID as standardUUID
@@ -18,7 +31,9 @@ class Issuer(Base):
     __tablename__ = "issuers"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     nit: Mapped[str] = mapped_column(String, index=True)
     name: Mapped[str] = mapped_column(String)
@@ -54,7 +69,9 @@ class Recipient(Base):
     __tablename__ = "recipients"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     nit: Mapped[str] = mapped_column(String, index=True)
     name: Mapped[str] = mapped_column(String)
@@ -84,7 +101,9 @@ class Invoices(Base):
     __tablename__ = "invoices"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     company_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("companies.id"), nullable=False, index=True
@@ -138,7 +157,9 @@ class Item(Base):
     __tablename__ = "items"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     invoice_id: Mapped[standardUUID] = mapped_column(UUID, ForeignKey("invoices.id"))
     line_number: Mapped[int] = mapped_column(Integer)
@@ -174,7 +195,9 @@ class InvoicesSummaries(Base):
     __tablename__ = "invoices_summaries"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     client_summary_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("client_summaries.id")
@@ -209,7 +232,9 @@ class ClientsSummaries(Base):
     __tablename__ = "client_summaries"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     nit: Mapped[str] = mapped_column(String)
     name: Mapped[str] = mapped_column(String)
@@ -238,7 +263,9 @@ class Accountants(Base):
     __tablename__ = "accountants"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     subscription_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("subscriptions.id")
@@ -283,7 +310,9 @@ class Companies(Base):
     __tablename__ = "companies"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     api_key: Mapped[str] = mapped_column(String, unique=True, nullable=True)
@@ -318,7 +347,6 @@ class Companies(Base):
     subscription: Mapped["Subscriptions"] = relationship(
         "Subscriptions", back_populates="companies"
     )
-    
 
 
 class AccountantCompanies(Base):
@@ -331,7 +359,9 @@ class AccountantCompanies(Base):
     __tablename__ = "accountant_companies"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     accountant_id: Mapped[standardUUID] = mapped_column(
         UUID, ForeignKey("accountants.id")
@@ -367,7 +397,9 @@ class Subscriptions(Base):
     __tablename__ = "subscriptions"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str] = mapped_column(String)
@@ -405,7 +437,9 @@ class InvoiceRequests(Base):
     __tablename__ = "invoice_requests"
 
     id: Mapped[standardUUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     company_id: Mapped[Optional[standardUUID]] = mapped_column(
         UUID, ForeignKey("companies.id"), nullable=True
