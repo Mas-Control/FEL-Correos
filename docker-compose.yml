@@ -35,6 +35,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_NAME}
       ENV: ${ENV}
+    volumes:
+      - .:/app
     command: ./entrypoint.sh
     depends_on:
       db:

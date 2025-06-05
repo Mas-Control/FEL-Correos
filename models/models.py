@@ -466,3 +466,15 @@ class InvoiceRequests(Base):
     accountant: Mapped[Optional["Accountants"]] = relationship(
         "Accountants", back_populates="invoice_requests"
     )
+
+
+class RequestLog(Base):
+    """Request log model for storing API request information."""
+
+    __tablename__ = "request_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    method: Mapped[str] = mapped_column(String, nullable=False)
+    path: Mapped[str] = mapped_column(String, nullable=False)
+    payload: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
