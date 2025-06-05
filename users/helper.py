@@ -25,7 +25,9 @@ def _send_credentials(email: str, password: str, is_company: bool = False) -> No
 
         # Send email using Zoho API
         zoho_client.send_email(
-            to_address=email, subject="Welcome to Control Tax!", content=content
+            to_address=email,
+            subject="Welcome to Control Tax!",
+            content=content,
         )
 
     except HTTPException as e:

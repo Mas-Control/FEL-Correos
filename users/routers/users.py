@@ -6,7 +6,13 @@ It includes routes for registering, activating, and managing accountants.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from models.models import Accountants, Subscriptions, Companies, AccountantCompanies, InvoiceRequests
+from models.models import (
+    Accountants,
+    Subscriptions,
+    Companies,
+    AccountantCompanies,
+    InvoiceRequests,
+)
 from schemas.accountant import AccountantCreate
 from schemas.company import CompanyCreate
 from core.security import get_password_hash, get_api_key
@@ -27,7 +33,7 @@ router = APIRouter(prefix="/v1/users", tags=["users"])
 async def register_accountant(
     accountant: AccountantCreate,
     db: Session = Depends(get_db),
-    api_key: str = Depends(get_api_key)
+    api_key: str = Depends(get_api_key),
 ) -> None:
     """
     Register a new accountant in the system.
@@ -88,8 +94,7 @@ async def register_accountant(
 
         # Create initial invoice request record
         invoice_request = InvoiceRequests(
-            accountant_id=new_accountant.id,
-            request_count=0
+            accountant_id=new_accountant.id, request_count=0
         )
         db.add(invoice_request)
         db.commit()
@@ -104,9 +109,9 @@ async def register_accountant(
 @router.patch("/accountant/{email}/status", status_code=status.HTTP_200_OK)
 async def activate_accountant(
     email: str,
-    status: bool,
+    is_active: bool,
     db: Session = Depends(get_db),
-    api_key: str = Depends(get_api_key)
+    api_key: str = Depends(get_api_key),
 ) -> None:
     """
     Activate or deactivate an accountant and manage their relationships.
@@ -124,7 +129,7 @@ async def activate_accountant(
 
     Args:
         email (str): The email address of the accountant to activate/deactivate
-        status (bool): True to activate, False to deactivate
+        is_active (bool): True to activate, False to deactivate
         db (Session): Database session for database operations
         api_key (str): API key for authentication
 
@@ -147,12 +152,12 @@ async def activate_accountant(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Accountant not found.",
             )
-        if accountant.is_active == status:
+        if accountant.is_active == is_active:
             return
 
-        if accountant.is_active and not status:
+        if accountant.is_active and not is_active:
             # Deactivate the accountant
-            accountant.is_active = status
+            accountant.is_active = is_active
             db.commit()
             db.refresh(accountant)
             # Deactivate the accountant's relation with the company
@@ -199,7 +204,7 @@ async def activate_accountant(
 async def register_companies(
     companies: list[CompanyCreate],
     db: Session = Depends(get_db),
-    api_key: str = Depends(get_api_key)
+    api_key: str = Depends(get_api_key),
 ) -> dict:
     """
     Register multiple companies in bulk with optional accountant relationships.
@@ -235,10 +240,7 @@ async def register_companies(
         HTTPException (400): If an accountant has reached their NIT limit
         HTTPException (500): If there's an error during the registration process
     """
-    results = {
-        "successful": [],
-        "failed": []
-    }
+    results = {"successful": [], "failed": []}
 
     for company in companies:
         try:
@@ -249,9 +251,16 @@ async def register_companies(
                 .first()
             )
             if existing_company:
-                if not existing_company.is_active and not existing_company.subscription_id and company.subscription_name:
+                if (
+                    not existing_company.is_active
+                    and not existing_company.subscription_id
+                    and company.subscription_name
+                ):
                     # Update existing company with new subscription
-                    logger.info("Updating inactive company with subscription: %s", company.email)
+                    logger.info(
+                        "Updating inactive company with subscription: %s",
+                        company.email,
+                    )
                     subscription = _get_subscription_by_name(
                         subscription_name=company.subscription_name,
                         db=db,
@@ -262,25 +271,31 @@ async def register_companies(
                         existing_company.nit = company.nit
                         db.commit()
                         db.refresh(existing_company)
-                        
+
                         # Handle accountant relation if provided
                         if company.accountant_email:
-                            logger.info("Linking company to accountant: %s", company.accountant_email)
+                            logger.info(
+                                "Linking company to accountant: %s",
+                                company.accountant_email,
+                            )
                             accountant = (
                                 db.query(Accountants)
-                                .filter(Accountants.email == company.accountant_email.lower().strip())
+                                .filter(
+                                    Accountants.email
+                                    == company.accountant_email.lower().strip()
+                                )
                                 .first()
                             )
                             if not accountant:
                                 raise HTTPException(
                                     status_code=status.HTTP_404_NOT_FOUND,
-                                    detail=f"Accountant not found for company {company.email}."
+                                    detail=f"Accountant not found for company {company.email}.",
                                 )
-                            
+
                             # Check NIT limit before creating relationship
                             if accountant.is_active:
                                 _check_accountant_nit_limit(accountant.id, db)
-                            
+
                             company_relation_status = False
                             if accountant.is_active:
                                 company_relation_status = True
@@ -293,40 +308,48 @@ async def register_companies(
 
                             db.add(accountant_company)
                             db.commit()
-                        
-                        results["successful"].append({
-                            "email": company.email,
-                            "name": company.name,
-                            "status": "updated"
-                        })
+
+                        results["successful"].append(
+                            {
+                                "email": company.email,
+                                "name": company.name,
+                                "status": "updated",
+                            }
+                        )
                         continue
                     else:
-                        results["failed"].append({
-                            "email": company.email,
-                            "reason": "Invalid or inactive subscription"
-                        })
+                        results["failed"].append(
+                            {
+                                "email": company.email,
+                                "reason": "Invalid or inactive subscription",
+                            }
+                        )
                         continue
                 else:
                     logger.info("Company already exists: %s", company.email)
-                    results["failed"].append({
-                        "email": company.email,
-                        "reason": "Company already exists"
-                    })
+                    results["failed"].append(
+                        {
+                            "email": company.email,
+                            "reason": "Company already exists",
+                        }
+                    )
                     continue
 
             # If there's an accountant, check NIT limit before creating the company
             if company.accountant_email:
                 accountant = (
                     db.query(Accountants)
-                    .filter(Accountants.email == company.accountant_email.lower().strip())
+                    .filter(
+                        Accountants.email == company.accountant_email.lower().strip()
+                    )
                     .first()
                 )
                 if not accountant:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Accountant not found for company {company.email}."
+                        detail=f"Accountant not found for company {company.email}.",
                     )
-                
+
                 # Check NIT limit before creating company
                 if accountant.is_active:
                     _check_accountant_nit_limit(accountant.id, db)
@@ -355,14 +378,16 @@ async def register_companies(
 
             # Create initial invoice request record
             invoice_request = InvoiceRequests(
-                company_id=new_company.id,
-                request_count=0
+                company_id=new_company.id, request_count=0
             )
             db.add(invoice_request)
             db.commit()
 
             if company.accountant_email:
-                logger.info("Linking company to accountant: %s", company.accountant_email)
+                logger.info(
+                    "Linking company to accountant: %s",
+                    company.accountant_email,
+                )
                 company_relation_status = False
                 if accountant.is_active:
                     company_relation_status = True
@@ -376,17 +401,11 @@ async def register_companies(
                 db.add(accountant_company)
                 db.commit()
 
-            results["successful"].append({
-                "email": company.email,
-                "name": company.name
-            })
+            results["successful"].append({"email": company.email, "name": company.name})
 
         except Exception as e:
             logger.error("Error registering company %s: %s", company.email, str(e))
-            results["failed"].append({
-                "email": company.email,
-                "reason": str(e)
-            })
+            results["failed"].append({"email": company.email, "reason": str(e)})
             db.rollback()
 
     return results
@@ -395,9 +414,9 @@ async def register_companies(
 @router.patch("/company/{nit}/status", status_code=status.HTTP_200_OK)
 async def activate_company(
     nit: str,
-    status: bool,
+    is_active: bool,
     db: Session = Depends(get_db),
-    api_key: str = Depends(get_api_key)
+    api_key: str = Depends(get_api_key),
 ) -> None:
     """
     Activate or deactivate a company and manage their API access.
@@ -413,7 +432,7 @@ async def activate_company(
 
     Args:
         nit (str): The NIT number of the company to activate/deactivate
-        status (bool): True to activate, False to deactivate
+        is_active (bool): True to activate, False to deactivate
         db (Session): Database session for database operations
         api_key (str): API key for authentication
 
@@ -432,12 +451,12 @@ async def activate_company(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Company not found.",
             )
-        if company.is_active == status:
+        if company.is_active == is_active:
             return
 
-        if company.is_active and not status:
+        if company.is_active and not is_active:
             # Deactivate the company
-            company.is_active = status
+            company.is_active = is_active
             db.commit()
             db.refresh(company)
             return
@@ -464,7 +483,7 @@ async def update_company_subscription(
     nit: str,
     subscription_name: str,
     db: Session = Depends(get_db),
-    api_key: str = Depends(get_api_key)
+    api_key: str = Depends(get_api_key),
 ) -> dict:
     """
     Update a company's subscription plan.
@@ -494,15 +513,11 @@ async def update_company_subscription(
     """
     try:
         # Check if the company exists
-        company = (
-            db.query(Companies)
-            .filter(Companies.nit == nit)
-            .first()
-        )
+        company = db.query(Companies).filter(Companies.nit == nit).first()
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Company not found."
+                detail="Company not found.",
             )
 
         # Get the new subscription
@@ -513,7 +528,7 @@ async def update_company_subscription(
         if not subscription or not subscription.is_active:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or inactive subscription."
+                detail="Invalid or inactive subscription.",
             )
 
         # Update the company's subscription
@@ -525,7 +540,7 @@ async def update_company_subscription(
             "email": company.email,
             "name": company.name,
             "subscription": subscription.name,
-            "status": "updated"
+            "status": "updated",
         }
 
     except HTTPException:
@@ -534,7 +549,7 @@ async def update_company_subscription(
         logger.error("Error updating company subscription: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while updating the subscription. {e}"
+            detail=f"An error occurred while updating the subscription. {e}",
         ) from e
 
 
@@ -543,7 +558,7 @@ async def update_accountant_subscription(
     email: str,
     subscription_name: str,
     db: Session = Depends(get_db),
-    api_key: str = Depends(get_api_key)
+    api_key: str = Depends(get_api_key),
 ) -> dict:
     """
     Update an accountant's subscription plan.
@@ -583,7 +598,7 @@ async def update_accountant_subscription(
         if not accountant:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Accountant not found."
+                detail="Accountant not found.",
             )
 
         # Get the new subscription
@@ -594,7 +609,7 @@ async def update_accountant_subscription(
         if not subscription or not subscription.is_active:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or inactive subscription."
+                detail="Invalid or inactive subscription.",
             )
 
         # Update the accountant's subscription
@@ -607,7 +622,7 @@ async def update_accountant_subscription(
             "first_name": accountant.first_name,
             "last_name": accountant.last_name,
             "subscription": subscription.name,
-            "status": "updated"
+            "status": "updated",
         }
 
     except HTTPException:
@@ -616,7 +631,7 @@ async def update_accountant_subscription(
         logger.error("Error updating accountant subscription: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while updating the subscription. {e}"
+            detail=f"An error occurred while updating the subscription. {e}",
         ) from e
 
 
@@ -639,11 +654,13 @@ def _check_accountant_nit_limit(accountant_id: UUID, db: Session) -> None:
     Returns:
         None: The function returns nothing if the check passes
     """
-    accountant: Accountants | None = db.query(Accountants).filter(Accountants.id == accountant_id).first()
+    accountant: Accountants | None = (
+        db.query(Accountants).filter(Accountants.id == accountant_id).first()
+    )
     if not accountant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Accountant not found."
+            detail="Accountant not found.",
         )
 
     subscription: Subscriptions | None = accountant.subscription
@@ -655,7 +672,7 @@ def _check_accountant_nit_limit(accountant_id: UUID, db: Session) -> None:
         db.query(AccountantCompanies)
         .filter(
             AccountantCompanies.accountant_id == accountant_id,
-            AccountantCompanies.is_active == True
+            AccountantCompanies.is_active == True,
         )
         .count()
     )
@@ -663,7 +680,7 @@ def _check_accountant_nit_limit(accountant_id: UUID, db: Session) -> None:
     if active_companies >= subscription.nit_limit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"NIT limit reached ({subscription.nit_limit}). Please upgrade your subscription."
+            detail=f"NIT limit reached ({subscription.nit_limit}). Please upgrade your subscription.",
         )
 
 
@@ -671,9 +688,9 @@ def _check_accountant_nit_limit(accountant_id: UUID, db: Session) -> None:
 async def update_company_accountant(
     nit: str,
     accountant_email: str,
-    status: bool = True,
+    is_active: bool = True,
     db: Session = Depends(get_db),
-    api_key: str = Depends(get_api_key)
+    api_key: str = Depends(get_api_key),
 ) -> dict:
     """
     Update the relationship between a company and an accountant.
@@ -687,7 +704,7 @@ async def update_company_accountant(
     Args:
         nit (str): The NIT number of the company
         accountant_email (str): The email address of the accountant
-        status (bool, optional): True to activate, False to deactivate. Defaults to True
+        is_active (bool, optional): True to activate, False to deactivate. Defaults to True
         db (Session): Database session for database operations
         api_key (str): API key for authentication
 
@@ -705,15 +722,11 @@ async def update_company_accountant(
     """
     try:
         # Check if the company exists
-        company = (
-            db.query(Companies)
-            .filter(Companies.nit == nit)
-            .first()
-        )
+        company = db.query(Companies).filter(Companies.nit == nit).first()
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Company not found."
+                detail="Company not found.",
             )
 
         # Check if the accountant exists
@@ -725,7 +738,7 @@ async def update_company_accountant(
         if not accountant:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Accountant not found."
+                detail="Accountant not found.",
             )
 
         # Check if relationship already exists
@@ -733,28 +746,28 @@ async def update_company_accountant(
             db.query(AccountantCompanies)
             .filter(
                 AccountantCompanies.company_id == company.id,
-                AccountantCompanies.accountant_id == accountant.id
+                AccountantCompanies.accountant_id == accountant.id,
             )
             .first()
         )
 
         if existing_relation:
             # If activating a relationship, check the NIT limit
-            if status and not existing_relation.is_active:
+            if is_active and not existing_relation.is_active:
                 _check_accountant_nit_limit(accountant.id, db)
             # Update existing relationship
-            existing_relation.is_active = status
+            existing_relation.is_active = is_active
             db.commit()
             db.refresh(existing_relation)
         else:
             # If creating a new relationship, check the NIT limit
-            if status:
+            if is_active:
                 _check_accountant_nit_limit(accountant.id, db)
             # Create new relationship, relation is active if accountant is active
             new_relation = AccountantCompanies()
             new_relation.company_id = company.id
             new_relation.accountant_id = accountant.id
-            new_relation.is_active = accountant.is_active and status
+            new_relation.is_active = accountant.is_active and is_active
             db.add(new_relation)
             db.commit()
             db.refresh(new_relation)
@@ -763,15 +776,19 @@ async def update_company_accountant(
             "company": {
                 "nit": company.nit,
                 "name": company.name,
-                "email": company.email
+                "email": company.email,
             },
             "accountant": {
                 "email": accountant.email,
                 "first_name": accountant.first_name,
-                "last_name": accountant.last_name
+                "last_name": accountant.last_name,
             },
-            "is_active": new_relation.is_active if not existing_relation else existing_relation.is_active,
-            "status": "updated" if existing_relation else "created"
+            "is_active": (
+                new_relation.is_active
+                if not existing_relation
+                else existing_relation.is_active
+            ),
+            "status": "updated" if existing_relation else "created",
         }
 
     except HTTPException:
@@ -780,5 +797,5 @@ async def update_company_accountant(
         logger.error("Error updating company-accountant relation: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while updating the relationship. {e}"
+            detail=f"An error occurred while updating the relationship. {e}",
         ) from e
