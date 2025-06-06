@@ -5,7 +5,7 @@ from health_check.routers import health_check
 from invoices.routers import invoices
 from auth.routers import auth
 from users.routers import users
-
+from middlewares.auth_and_logging import RequestLoggingMiddleware
 
 # Configurar logging
 logging.basicConfig(
@@ -29,6 +29,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggingMiddleware)
 
 logger.info("Registering API routes...")
 
